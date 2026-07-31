@@ -1,0 +1,11 @@
+{
+  "gse_accession": "GSE_SYNTHETIC",
+  "samples": {
+    "PC9_DMSO_1": {"cell_line": "PC9", "condition": "DMSO", "replicate": 1},
+    "PC9_DMSO_2": {"cell_line": "PC9", "condition": "DMSO", "replicate": 2},
+    "PC9_DMSO_3": {"cell_line": "PC9", "condition": "DMSO", "replicate": 3},
+    "PC9_osi_DTP_1": {"cell_line": "PC9", "condition": "osi_DTP", "replicate": 1},
+    "PC9_osi_DTP_2": {"cell_line": "PC9", "condition": "osi_DTP", "replicate": 2},
+    "PC9_osi_DTP_3": {"cell_line": "PC9", "condition": "osi_DTP", "replicate": 3}
+  }
+}

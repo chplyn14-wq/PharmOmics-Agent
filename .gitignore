@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+
+# Virtual env
+.venv/
+venv/
+
+# IDE
+.vscode/
+.idea/
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Run store (generated)
+runs/
+
+# Generated data
+*.h5
+*.parquet
+!data/demo/
+
+# OS
+.DS_Store
+Thumbs.db
