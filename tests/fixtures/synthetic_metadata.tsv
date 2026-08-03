@@ -1,0 +1,4 @@
+sample_id	condition	cell_line	replicate	batch
+HCC2935_DMSO_1	DMSO	HCC2935	1	batch1
+HCC2935_DMSO_2	DMSO	HCC2935	2	batch1
+HCC2935_DMSO_3	DMSO	HCC2935	3	batch1
