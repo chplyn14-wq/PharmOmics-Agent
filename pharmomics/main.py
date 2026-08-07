@@ -11,6 +11,10 @@ from pathlib import Path
 
 import typer
 
+from pharmomics.analysis.example_data import make_demo_inputs
+from pharmomics.analysis.render import render_markdown_report
+from pharmomics.analysis.run import run_analysis
+from pharmomics.analysis.runner import AnalysisValidationError
 from pharmomics.config import load_settings
 from pharmomics.ingestion.loader import (
     GeneIdType,
@@ -158,6 +162,44 @@ def ingest(
     typer.echo(f"  Manifest:               {manifest_path}")
     typer.echo("=" * 60)
     typer.echo("Ingestion complete.")
+
+
+@app.command("analyze-demo")
+def analyze_demo(
+    output: Path = typer.Option(
+        Path("report.md"),
+        "--output",
+        "-o",
+        help="Output path for the Markdown report.",
+    ),
+) -> None:
+    """Run differential analysis on built-in demo data and write a report.
+
+    Uses deterministic demo data (6 genes, 6 samples) to exercise the
+    full analysis pipeline: validation, differential analysis, Markdown
+    rendering, and report persistence.
+
+    Returns a non-zero exit code on failure.
+    """
+    try:
+        omics, design, spec = make_demo_inputs()
+        result = run_analysis(spec, design, omics)
+    except AnalysisValidationError as exc:
+        typer.echo(f"Analysis validation error: {exc}", err=True)
+        raise typer.Exit(1) from exc
+
+    markdown = render_markdown_report(result)
+
+    output_parent = output.parent
+    if not output_parent.exists():
+        typer.echo(
+            f"Error: Output directory does not exist: {output_parent}",
+            err=True,
+        )
+        raise typer.Exit(1)
+
+    output.write_text(markdown, encoding="utf-8")
+    typer.echo(f"Report written to {output.resolve()}")
 
 
 if __name__ == "__main__":
