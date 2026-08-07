@@ -9,6 +9,13 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from pharmomics.analysis.assembly import assemble_gene_differentials
+from pharmomics.analysis.bh_fdr import compute_bh_adjusted_p_values
+from pharmomics.analysis.contrast import resolve_contrast
+from pharmomics.analysis.log2_fold_change import compute_log2_fold_change
+from pharmomics.analysis.matrix_slice import prepare_differential_inputs
+from pharmomics.analysis.mean_expression import compute_mean_expression
+from pharmomics.analysis.per_gene_pvalue import compute_per_gene_p_value
 from pharmomics.analysis.results import AnalysisResult
 from pharmomics.analysis.runner import (
     AnalysisValidationError,
@@ -62,20 +69,61 @@ def _execute_differential_analysis(
     design: ExperimentDesign,
     omics: OmicsMatrix,
 ) -> AnalysisResult:
-    """MVP placeholder for differential analysis execution.
+    """Execute a differential analysis pipeline end-to-end.
 
-    Returns a structurally valid ``AnalysisResult`` with no gene-level
-    data.  All numerical fields are deferred to a future statistical
-    backend.
+    Resolves the contrast, extracts matrix slices, computes per-gene
+    statistics (mean expression, log2FC, Welch's p-value, BH-FDR),
+    assembles ``GeneDifferential`` results, and returns an
+    ``AnalysisResult``.
 
-    Parameters are intentionally unused — this function is a stub.
+    Parameters
+    ----------
+    specification : AnalysisSpecification
+        The analysis intent carrying the contrast reference and
+        optional ``fdr_threshold`` parameter.
+    design : ExperimentDesign
+        The experimental design for contrast resolution.
+    omics : OmicsMatrix
+        The omics data matrix to analyse.
+
+    Returns
+    -------
+    AnalysisResult
+        Structured result with per-gene ``GeneDifferential`` tuples.
+
+    Raises
+    ------
+    ContrastResolutionError
+        If the contrast cannot be resolved in the design.
+    MatrixSliceError
+        If the matrix cannot be sliced for the resolved contrast.
+    MeanExpressionError
+        If mean expression cannot be computed from the slices.
+    Log2FoldChangeError
+        If log2 fold change cannot be computed.
+    PerGenePValueError
+        If per-gene p-values cannot be computed.
+    BHAdjustmentError
+        If BH-FDR adjustment fails.
+    AssemblyError
+        If intermediate results are inconsistent.
     """
-    _ = design, omics  # unused in MVP
+    contrast_id = specification.contrast_references[0]
+
+    resolved = resolve_contrast(design, contrast_id)
+    diff_input = prepare_differential_inputs(omics, resolved)
+    mean_expr = compute_mean_expression(diff_input)
+    log2fc = compute_log2_fold_change(mean_expr)
+    pvals = compute_per_gene_p_value(diff_input)
+    adj = compute_bh_adjusted_p_values(pvals)
+    gene_results = assemble_gene_differentials(
+        mean_expr, log2fc, pvals, adj, specification
+    )
 
     return AnalysisResult(
         analysis_type="differential_analysis",
-        contrast_id=specification.contrast_references[0],
-        gene_results=(),
-        n_genes_tested=0,
-        warnings=("Differential analysis not implemented yet.",),
+        contrast_id=resolved.contrast_id,
+        gene_results=gene_results,
+        n_genes_tested=len(gene_results),
+        warnings=(),
     )
