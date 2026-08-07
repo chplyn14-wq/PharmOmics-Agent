@@ -15,6 +15,7 @@ from pharmomics.analysis.example_data import make_demo_inputs
 from pharmomics.analysis.render import render_markdown_report
 from pharmomics.analysis.run import run_analysis
 from pharmomics.analysis.runner import AnalysisValidationError
+from pharmomics.cli.analyze import analyze as run_analyze
 from pharmomics.config import load_settings
 from pharmomics.ingestion.loader import (
     GeneIdType,
@@ -189,6 +190,98 @@ def analyze_demo(
         raise typer.Exit(1) from exc
 
     markdown = render_markdown_report(result)
+
+    output_parent = output.parent
+    if not output_parent.exists():
+        typer.echo(
+            f"Error: Output directory does not exist: {output_parent}",
+            err=True,
+        )
+        raise typer.Exit(1)
+
+    output.write_text(markdown, encoding="utf-8")
+    typer.echo(f"Report written to {output.resolve()}")
+
+
+@app.command("analyze")
+def analyze_cmd(
+    expression_file: Path = typer.Option(
+        ...,
+        "--expression-file",
+        "-e",
+        help="Path to the expression matrix file"
+        " (TSV/CSV, optionally gzip-compressed).",
+    ),
+    metadata_file: Path = typer.Option(
+        ...,
+        "--metadata-file",
+        "-m",
+        help="Path to the sample metadata file (JSON, TSV, or CSV).",
+    ),
+    contrast_control: str = typer.Option(
+        ...,
+        "--contrast-control",
+        help="Control condition name (reference group).",
+    ),
+    contrast_treatment: str = typer.Option(
+        ...,
+        "--contrast-treatment",
+        help="Treatment condition name (comparison group).",
+    ),
+    output: Path = typer.Option(
+        Path("report.md"),
+        "--output",
+        "-o",
+        help="Output path for the Markdown report.",
+    ),
+    source_id: str = typer.Option(
+        "local",
+        "--source-id",
+        "-s",
+        help="Source identifier for provenance (default: local).",
+    ),
+) -> None:
+    """Run differential analysis on real data files and write a report.
+
+    Loads an expression matrix and sample metadata, constructs the
+    experimental design and analysis specification, runs the full
+    analysis pipeline, and writes a Markdown report.
+
+    Returns a non-zero exit code on failure.
+    """
+    if not expression_file.exists():
+        typer.echo(
+            f"Error: Expression file not found: {expression_file}",
+            err=True,
+        )
+        raise typer.Exit(1)
+
+    if not metadata_file.exists():
+        typer.echo(
+            f"Error: Metadata file not found: {metadata_file}",
+            err=True,
+        )
+        raise typer.Exit(1)
+
+    try:
+        markdown = run_analyze(
+            expression_file=expression_file,
+            metadata_file=metadata_file,
+            contrast_control=contrast_control,
+            contrast_treatment=contrast_treatment,
+            output=output,
+            source_id=source_id,
+        )
+    except (
+        FileNotFoundError,
+        AnalysisValidationError,
+        ValueError,
+    ) as exc:
+        typer.echo(f"Analysis failed: {exc}", err=True)
+        raise typer.Exit(1) from exc
+    except Exception as exc:
+        typer.echo(f"Unexpected error: {exc}", err=True)
+        raise typer.Exit(1) from exc
 
     output_parent = output.parent
     if not output_parent.exists():
