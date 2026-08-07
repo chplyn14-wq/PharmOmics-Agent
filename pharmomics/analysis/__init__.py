@@ -15,15 +15,23 @@ from pharmomics.analysis.matrix_slice import (
     MatrixSliceError,
     prepare_differential_inputs,
 )
+from pharmomics.analysis.mean_expression import (
+    GeneMeanExpression,
+    MeanExpressionError,
+    compute_mean_expression,
+)
 from pharmomics.analysis.schemas import AnalysisSpecification
 from pharmomics.analysis.validation import validate_analysis_specification
 
 __all__ = [
     "AnalysisSpecification",
     "DifferentialInput",
+    "GeneMeanExpression",
     "MatrixSlice",
     "MatrixSliceError",
+    "MeanExpressionError",
     "ResolvedContrast",
+    "compute_mean_expression",
     "prepare_differential_inputs",
     "resolve_contrast",
     "validate_analysis_specification",
