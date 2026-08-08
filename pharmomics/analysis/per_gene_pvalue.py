@@ -134,9 +134,7 @@ def _validate_slices(comp: object, ref: object) -> None:
     ref_values = ref.dataframe[ref_sample_cols]  # type: ignore[union-attr]
 
     if not _is_numeric(comp_values):
-        raise PerGenePValueError(
-            "Comparison slice contains non-numeric sample values"
-        )
+        raise PerGenePValueError("Comparison slice contains non-numeric sample values")
     if not _is_numeric(ref_values):
         raise PerGenePValueError("Reference slice contains non-numeric sample values")
 

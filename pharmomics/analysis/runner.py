@@ -68,7 +68,5 @@ def validate_analysis_inputs(
     violations.extend(check_analysis_design_compatibility(specification, design))
 
     if violations:
-        message = "Validation failed:\n" + "\n".join(
-            f"- {v}" for v in violations
-        )
+        message = "Validation failed:\n" + "\n".join(f"- {v}" for v in violations)
         raise AnalysisValidationError(message)

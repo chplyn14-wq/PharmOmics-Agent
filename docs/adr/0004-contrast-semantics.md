@@ -26,8 +26,8 @@ two group identifiers.**
 ```python
 class Contrast(BaseModel):
     contrast_id: str
-    comparison_group_id: str   # the "A" in A vs B
-    reference_group_id: str    # the "B" in A vs B
+    comparison_group_id: str  # the "A" in A vs B
+    reference_group_id: str  # the "B" in A vs B
 ```
 
 ### Fixed semantic rule

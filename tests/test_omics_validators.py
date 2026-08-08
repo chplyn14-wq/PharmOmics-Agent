@@ -58,9 +58,7 @@ def _make_valid_matrix(
         gid = gene_ids[i] if i < len(gene_ids) else f"G_extra{i}"
         vals = [float(i * actual_cols + j) for j in range(1, actual_cols)]
         rows.append([gid] + vals)
-    cols = ["gene"] + sample_ids + [
-        f"extra_{j}" for j in range(extra_cols)
-    ]
+    cols = ["gene"] + sample_ids + [f"extra_{j}" for j in range(extra_cols)]
     df = pd.DataFrame(rows, columns=cols)
 
     # Build feature metadata
@@ -347,15 +345,14 @@ class TestValidateFull:
         from pharmomics.omics.adapter import from_load_results
 
         fixtures = Path(__file__).parent / "fixtures"
-        expr = load_expression_matrix(
-            fixtures / "synthetic_expression.tsv"
-        )
+        expr = load_expression_matrix(fixtures / "synthetic_expression.tsv")
         meta = load_sample_metadata(
             fixtures / "synthetic_metadata.json",
             expression_sample_ids=expr.sample_ids,
         )
         matrix = from_load_results(
-            expr, meta,
+            expr,
+            meta,
             source_id="GSE_SYNTHETIC",
             sha256="test-hash",
         )

@@ -77,11 +77,20 @@ _CONTROL_VALUES = [100.0, 200.0, 50.0, 500.0, 300.0, 150.0]
 _TREATMENT_VALUES = [200.0, 400.0, 100.0, 1000.0, 600.0, 300.0]
 
 _DEMO_GENES = [
-    "EGFR", "ERBB2", "TP53", "MYC", "KRAS", "PTEN",
+    "EGFR",
+    "ERBB2",
+    "TP53",
+    "MYC",
+    "KRAS",
+    "PTEN",
 ]
 _DEMO_SAMPLES = [
-    "ctrl_1", "ctrl_2", "ctrl_3",
-    "trt_1", "trt_2", "trt_3",
+    "ctrl_1",
+    "ctrl_2",
+    "ctrl_3",
+    "trt_1",
+    "trt_2",
+    "trt_3",
 ]
 
 
@@ -121,37 +130,45 @@ def _build_demo_design() -> ExperimentDesign:
         description="Demo: control vs treatment differential expression",
         samples=[
             DesignSample(
-                sample_id="ctrl_1", group_id="ctrl",
+                sample_id="ctrl_1",
+                group_id="ctrl",
                 factor_values={"condition": "control"},
             ),
             DesignSample(
-                sample_id="ctrl_2", group_id="ctrl",
+                sample_id="ctrl_2",
+                group_id="ctrl",
                 factor_values={"condition": "control"},
             ),
             DesignSample(
-                sample_id="ctrl_3", group_id="ctrl",
+                sample_id="ctrl_3",
+                group_id="ctrl",
                 factor_values={"condition": "control"},
             ),
             DesignSample(
-                sample_id="trt_1", group_id="trt",
+                sample_id="trt_1",
+                group_id="trt",
                 factor_values={"condition": "treatment"},
             ),
             DesignSample(
-                sample_id="trt_2", group_id="trt",
+                sample_id="trt_2",
+                group_id="trt",
                 factor_values={"condition": "treatment"},
             ),
             DesignSample(
-                sample_id="trt_3", group_id="trt",
+                sample_id="trt_3",
+                group_id="trt",
                 factor_values={"condition": "treatment"},
             ),
         ],
         groups=[
             ExperimentalGroup(
-                group_id="ctrl", label="Control",
+                group_id="ctrl",
+                label="Control",
                 role=GroupRole.CONTROL,
             ),
             ExperimentalGroup(
-                group_id="trt", label="Treatment",
+                group_id="trt",
+                label="Treatment",
                 role=GroupRole.TREATMENT,
             ),
         ],

@@ -73,10 +73,7 @@ def _check_feature_metadata_coverage(matrix: OmicsMatrix) -> list[str]:
     missing = set(matrix.feature_ids) - set(matrix.feature_metadata.keys())
     if missing:
         example = sorted(missing)[:5]
-        return [
-            f"{len(missing)} feature(s) missing from feature_metadata: "
-            f"{example}"
-        ]
+        return [f"{len(missing)} feature(s) missing from feature_metadata: {example}"]
     return []
 
 
@@ -85,10 +82,7 @@ def _check_sample_metadata_coverage(matrix: OmicsMatrix) -> list[str]:
     missing = set(matrix.sample_ids) - set(matrix.sample_metadata.keys())
     if missing:
         example = sorted(missing)[:5]
-        return [
-            f"{len(missing)} sample(s) missing from sample_metadata: "
-            f"{example}"
-        ]
+        return [f"{len(missing)} sample(s) missing from sample_metadata: {example}"]
     return []
 
 
@@ -118,15 +112,11 @@ def _check_unique_ids(matrix: OmicsMatrix) -> list[str]:
 
     dup_features = _find_duplicates(matrix.feature_ids)
     if dup_features:
-        violations.append(
-            f"Duplicate feature_ids: {sorted(dup_features)[:5]}"
-        )
+        violations.append(f"Duplicate feature_ids: {sorted(dup_features)[:5]}")
 
     dup_samples = _find_duplicates(matrix.sample_ids)
     if dup_samples:
-        violations.append(
-            f"Duplicate sample_ids: {sorted(dup_samples)[:5]}"
-        )
+        violations.append(f"Duplicate sample_ids: {sorted(dup_samples)[:5]}")
 
     return violations
 
@@ -137,15 +127,11 @@ def _check_nonempty_ids(matrix: OmicsMatrix) -> list[str]:
 
     empty_features = [i for i, f in enumerate(matrix.feature_ids) if not f.strip()]
     if empty_features:
-        violations.append(
-            f"Empty feature_id at index/indices: {empty_features[:5]}"
-        )
+        violations.append(f"Empty feature_id at index/indices: {empty_features[:5]}")
 
     empty_samples = [i for i, s in enumerate(matrix.sample_ids) if not s.strip()]
     if empty_samples:
-        violations.append(
-            f"Empty sample_id at index/indices: {empty_samples[:5]}"
-        )
+        violations.append(f"Empty sample_id at index/indices: {empty_samples[:5]}")
 
     return violations
 

@@ -46,10 +46,7 @@ def _make_expr_result(
         # Build rows: each gene is a row with numeric sample values
         rows = []
         for i, g in enumerate(gene_ids):
-            row = [g] + [
-                float(i * len(sample_ids) + j)
-                for j in range(len(sample_ids))
-            ]
+            row = [g] + [float(i * len(sample_ids) + j) for j in range(len(sample_ids))]
             rows.append(row)
         columns = ["gene"] + sample_ids
         dataframe = pd.DataFrame(rows, columns=columns)
@@ -82,10 +79,12 @@ def _make_meta_result(
         conditions = {sid: "control" for sid in sample_ids}
     conds_list = [conditions.get(sid, "control") for sid in sample_ids]
     return MetadataLoadResult(
-        dataframe=pd.DataFrame({
-            "sample_id": sample_ids,
-            "condition": conds_list,
-        }),
+        dataframe=pd.DataFrame(
+            {
+                "sample_id": sample_ids,
+                "condition": conds_list,
+            }
+        ),
         sample_ids=set(sample_ids),
         conditions=conditions,
         cell_lines={sid: None for sid in sample_ids},
@@ -356,8 +355,7 @@ class TestSampleMetadataPropagation:
         result = from_load_results(expr, meta)
         # At least one sample has replicate in annotations
         has_replicate = any(
-            "replicate" in sm.annotations
-            for sm in result.sample_metadata.values()
+            "replicate" in sm.annotations for sm in result.sample_metadata.values()
         )
         assert has_replicate
 
@@ -463,7 +461,8 @@ class TestProvenance:
         expr = _make_expr_result()
         meta = _make_meta_result()
         result = from_load_results(
-            expr, meta,
+            expr,
+            meta,
             source_id="GSE_X",
             software_version="0.2.0",
         )

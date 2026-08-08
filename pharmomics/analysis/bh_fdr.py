@@ -80,9 +80,7 @@ def compute_bh_adjusted_p_values(
             )
 
     # Identify valid (non-NaN) entries with their original indices.
-    valid_indices = [
-        i for i, e in enumerate(raw_p_values) if not isnan(e.p_value)
-    ]
+    valid_indices = [i for i, e in enumerate(raw_p_values) if not isnan(e.p_value)]
 
     # All NaN — return all-NaN result.
     if not valid_indices:

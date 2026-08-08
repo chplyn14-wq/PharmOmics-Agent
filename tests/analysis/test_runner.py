@@ -78,8 +78,7 @@ def _make_omics_with_samples(sample_ids: list[str]):
     from pharmomics.omics.schemas import OmicsMatrix
 
     df = pd.DataFrame(
-        {"feature_id": ["G1", "G2"]}
-        | {sid: [1.0, 2.0] for sid in sample_ids},
+        {"feature_id": ["G1", "G2"]} | {sid: [1.0, 2.0] for sid in sample_ids},
     )
     return OmicsMatrix(
         matrix_id="mx-test",
@@ -199,7 +198,9 @@ class TestMultipleViolationsPreserved:
             ],
             groups=[
                 ExperimentalGroup(
-                    group_id="g1", label="G1", role=GroupRole.CONTROL,
+                    group_id="g1",
+                    label="G1",
+                    role=GroupRole.CONTROL,
                 ),
             ],
             factors=[

@@ -43,14 +43,23 @@ class TestMakeDemoInputs:
     def test_omics_feature_ids_are_correct(self) -> None:
         omics, _, _ = make_demo_inputs()
         assert omics.feature_ids == [
-            "EGFR", "ERBB2", "TP53", "MYC", "KRAS", "PTEN",
+            "EGFR",
+            "ERBB2",
+            "TP53",
+            "MYC",
+            "KRAS",
+            "PTEN",
         ]
 
     def test_omics_sample_ids_are_correct(self) -> None:
         omics, _, _ = make_demo_inputs()
         assert omics.sample_ids == [
-            "ctrl_1", "ctrl_2", "ctrl_3",
-            "trt_1", "trt_2", "trt_3",
+            "ctrl_1",
+            "ctrl_2",
+            "ctrl_3",
+            "trt_1",
+            "trt_2",
+            "trt_3",
         ]
 
     def test_design_has_two_groups(self) -> None:

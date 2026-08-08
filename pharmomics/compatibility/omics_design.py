@@ -84,11 +84,7 @@ def _check_design_samples_in_omics(
     # Special case: completely no overlap
     overlap = design_ids & omics_ids
     if not overlap and omics_ids:
-        return [
-            "No overlap between ExperimentDesign and OmicsMatrix samples"
-        ]
+        return ["No overlap between ExperimentDesign and OmicsMatrix samples"]
 
     examples = sorted(missing)[:5]
-    return [
-        f"Design sample(s) not found in OmicsMatrix: {examples}"
-    ]
+    return [f"Design sample(s) not found in OmicsMatrix: {examples}"]

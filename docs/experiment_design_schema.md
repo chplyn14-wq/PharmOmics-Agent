@@ -25,17 +25,17 @@ own or reference OmicsMatrix.
 class ExperimentDesign(BaseModel):
     model_config = ConfigDict(frozen=True)
 
-    schema_version: str                       # e.g. "1.0.0"
-    experiment_id: str                        # unique identifier
-    description: str | None                   # human-readable description
+    schema_version: str  # e.g. "1.0.0"
+    experiment_id: str  # unique identifier
+    description: str | None  # human-readable description
 
-    samples: list[DesignSample]               # all samples in the experiment
-    groups: list[ExperimentalGroup]           # group definitions
-    factors: list[ExperimentalFactor]         # experimental factors
-    contrasts: list[Contrast]                 # comparison intents (may be empty)
-    covariates: list[CovariateDefinition]     # covariates including batch
-    pairing: PairingDefinition | None         # paired-sample structure
-    metadata: dict[str, JSONScalar] | None    # non-core extensions only
+    samples: list[DesignSample]  # all samples in the experiment
+    groups: list[ExperimentalGroup]  # group definitions
+    factors: list[ExperimentalFactor]  # experimental factors
+    contrasts: list[Contrast]  # comparison intents (may be empty)
+    covariates: list[CovariateDefinition]  # covariates including batch
+    pairing: PairingDefinition | None  # paired-sample structure
+    metadata: dict[str, JSONScalar] | None  # non-core extensions only
 ```
 
 ### Constraints
@@ -60,14 +60,14 @@ One row per experimental sample.
 class DesignSample(BaseModel):
     model_config = ConfigDict(frozen=True)
 
-    sample_id: str                            # unique within this experiment
-    group_id: str                             # references ExperimentalGroup.group_id
-    factor_values: dict[str, ScalarValue]     # values for each ExperimentalFactor
-    treatment: Treatment | None               # treatment details (if applicable)
-    biological_replicate: str | None          # replicate group identifier
-    technical_replicate: str | None           # technical replicate identifier
+    sample_id: str  # unique within this experiment
+    group_id: str  # references ExperimentalGroup.group_id
+    factor_values: dict[str, ScalarValue]  # values for each ExperimentalFactor
+    treatment: Treatment | None  # treatment details (if applicable)
+    biological_replicate: str | None  # replicate group identifier
+    technical_replicate: str | None  # technical replicate identifier
     covariate_values: dict[str, ScalarValue]  # all covariates including batch
-    pair_id: str | None                       # pairing group identifier
+    pair_id: str | None  # pairing group identifier
 ```
 
 ### Constraints
@@ -94,9 +94,9 @@ Defines a named experimental condition group.
 class ExperimentalGroup(BaseModel):
     model_config = ConfigDict(frozen=True)
 
-    group_id: str                             # unique within this experiment
-    label: str                                # short human-readable label
-    description: str | None                   # longer description
+    group_id: str  # unique within this experiment
+    label: str  # short human-readable label
+    description: str | None  # longer description
 ```
 
 ---
@@ -109,10 +109,10 @@ A manipulated variable in the experiment (e.g. drug, time, dose).
 class ExperimentalFactor(BaseModel):
     model_config = ConfigDict(frozen=True)
 
-    factor_id: str                            # unique within this experiment
-    factor_type: FactorType                   # categorical | continuous | ordinal
+    factor_id: str  # unique within this experiment
+    factor_type: FactorType  # categorical | continuous | ordinal
     description: str | None
-    levels: list[str] | None                  # for categorical factors
+    levels: list[str] | None  # for categorical factors
 ```
 
 ---
@@ -125,9 +125,9 @@ Defines a comparison between two groups. See ADR 0004 for full rationale.
 class Contrast(BaseModel):
     model_config = ConfigDict(frozen=True)
 
-    contrast_id: str                          # unique within this experiment
-    comparison_group_id: str                  # the "A" in A vs B
-    reference_group_id: str                   # the "B" in A vs B
+    contrast_id: str  # unique within this experiment
+    comparison_group_id: str  # the "A" in A vs B
+    reference_group_id: str  # the "B" in A vs B
     description: str | None
 ```
 
@@ -150,9 +150,9 @@ See ADR 0005 for batch-as-covariate rationale.
 class CovariateDefinition(BaseModel):
     model_config = ConfigDict(frozen=True)
 
-    covariate_id: str                         # unique within this experiment
-    role: CovariateRole                       # batch | clinical | technical | other
-    value_type: CovariateValueType            # categorical | continuous | ordinal
+    covariate_id: str  # unique within this experiment
+    role: CovariateRole  # batch | clinical | technical | other
+    value_type: CovariateValueType  # categorical | continuous | ordinal
     description: str | None
 ```
 
@@ -167,7 +167,7 @@ tumour/normal).
 class PairingDefinition(BaseModel):
     model_config = ConfigDict(frozen=True)
 
-    pairing_type: str                         # e.g. "before_after", "matched"
+    pairing_type: str  # e.g. "before_after", "matched"
     description: str | None
 ```
 
@@ -181,9 +181,9 @@ Treatment applied to a sample.
 class Treatment(BaseModel):
     model_config = ConfigDict(frozen=True)
 
-    compound: str                             # drug or compound name
-    dose: str | None                          # dose with units, e.g. "500nM"
-    duration: str | None                      # e.g. "24h", "72h"
+    compound: str  # drug or compound name
+    dose: str | None  # dose with units, e.g. "500nM"
+    duration: str | None  # e.g. "24h", "72h"
     description: str | None
 ```
 

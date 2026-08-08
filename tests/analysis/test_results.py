@@ -168,18 +168,27 @@ class TestAnalysisResult:
         genes = (
             GeneDifferential(
                 gene_id="C",
-                log2_fold_change=0.0, p_value=1.0, adj_p_value=1.0,
-                significant=False, base_mean=0.0,
+                log2_fold_change=0.0,
+                p_value=1.0,
+                adj_p_value=1.0,
+                significant=False,
+                base_mean=0.0,
             ),
             GeneDifferential(
                 gene_id="A",
-                log2_fold_change=0.0, p_value=1.0, adj_p_value=1.0,
-                significant=False, base_mean=0.0,
+                log2_fold_change=0.0,
+                p_value=1.0,
+                adj_p_value=1.0,
+                significant=False,
+                base_mean=0.0,
             ),
             GeneDifferential(
                 gene_id="B",
-                log2_fold_change=0.0, p_value=1.0, adj_p_value=1.0,
-                significant=False, base_mean=0.0,
+                log2_fold_change=0.0,
+                p_value=1.0,
+                adj_p_value=1.0,
+                significant=False,
+                base_mean=0.0,
             ),
         )
         r = AnalysisResult(

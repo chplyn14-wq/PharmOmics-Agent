@@ -77,10 +77,12 @@ def _check_identifiers(design: ExperimentDesign) -> list[str]:
         violations.append("Empty experiment_id")
 
     # I-03: duplicate sample_id
-    violations.extend(_check_unique_ids(
-        [s.sample_id for s in design.samples],
-        "sample_id",
-    ))
+    violations.extend(
+        _check_unique_ids(
+            [s.sample_id for s in design.samples],
+            "sample_id",
+        )
+    )
     # I-01: empty sample_id
     for i, sample in enumerate(design.samples):
         if sample.sample_id == "":
@@ -88,45 +90,51 @@ def _check_identifiers(design: ExperimentDesign) -> list[str]:
     # I-02: whitespace-only sample_id
     for sample in design.samples:
         if sample.sample_id != "" and not sample.sample_id.strip():
-            violations.append(
-                f"Whitespace-only sample_id: {sample.sample_id!r}"
-            )
+            violations.append(f"Whitespace-only sample_id: {sample.sample_id!r}")
 
     # I-04: duplicate group_id
-    violations.extend(_check_unique_ids(
-        [g.group_id for g in design.groups],
-        "group_id",
-    ))
+    violations.extend(
+        _check_unique_ids(
+            [g.group_id for g in design.groups],
+            "group_id",
+        )
+    )
     # I-08: empty group_id
     for g in design.groups:
         if not g.group_id.strip():
             violations.append("Empty group_id")
 
     # I-05: duplicate factor_id
-    violations.extend(_check_unique_ids(
-        [f.factor_id for f in design.factors],
-        "factor_id",
-    ))
+    violations.extend(
+        _check_unique_ids(
+            [f.factor_id for f in design.factors],
+            "factor_id",
+        )
+    )
     # I-09: empty factor_id
     for f in design.factors:
         if not f.factor_id.strip():
             violations.append("Empty factor_id")
 
     # I-06: duplicate covariate_id
-    violations.extend(_check_unique_ids(
-        [c.covariate_id for c in design.covariates],
-        "covariate_id",
-    ))
+    violations.extend(
+        _check_unique_ids(
+            [c.covariate_id for c in design.covariates],
+            "covariate_id",
+        )
+    )
     # I-10: empty covariate_id
     for c in design.covariates:
         if not c.covariate_id.strip():
             violations.append("Empty covariate_id")
 
     # I-07: duplicate contrast_id
-    violations.extend(_check_unique_ids(
-        [ct.contrast_id for ct in design.contrasts],
-        "contrast_id",
-    ))
+    violations.extend(
+        _check_unique_ids(
+            [ct.contrast_id for ct in design.contrasts],
+            "contrast_id",
+        )
+    )
     # I-11: empty contrast_id
     for ct in design.contrasts:
         if not ct.contrast_id.strip():
@@ -206,8 +214,7 @@ def _check_value_types(design: ExperimentDesign) -> list[str]:
     for f in design.factors:
         if f.factor_type == FactorType.CATEGORICAL and f.levels is None:
             violations.append(
-                f"Factor {f.factor_id!r} is categorical but has no "
-                f"levels defined"
+                f"Factor {f.factor_id!r} is categorical but has no levels defined"
             )
 
     # Per-sample checks
@@ -225,9 +232,7 @@ def _check_value_types(design: ExperimentDesign) -> list[str]:
             if covariate is None:
                 continue  # R-05 already catches unknown keys
             violations.extend(
-                _check_value_against_covariate(
-                    key, value, covariate, sample.sample_id
-                )
+                _check_value_against_covariate(key, value, covariate, sample.sample_id)
             )
 
     return violations
@@ -372,9 +377,7 @@ def _check_treatments(design: ExperimentDesign) -> list[str]:
 
         # T-01: empty compound
         if not t.compound.strip():
-            violations.append(
-                f"Sample {sid!r} treatment has empty compound"
-            )
+            violations.append(f"Sample {sid!r} treatment has empty compound")
 
         # T-02 … T-07: dose checks
         if t.dose is not None:
@@ -382,28 +385,19 @@ def _check_treatments(design: ExperimentDesign) -> list[str]:
             unit = t.dose.unit
 
             if math.isnan(val):
-                violations.append(
-                    f"Sample {sid!r} treatment dose is NaN"
-                )
+                violations.append(f"Sample {sid!r} treatment dose is NaN")
             elif math.isinf(val):
-                violations.append(
-                    f"Sample {sid!r} treatment dose is infinity"
-                )
+                violations.append(f"Sample {sid!r} treatment dose is infinity")
             else:
                 if val < 0:
                     violations.append(
-                        f"Sample {sid!r} treatment dose value {val} "
-                        f"is negative"
+                        f"Sample {sid!r} treatment dose value {val} is negative"
                     )
                 if val == 0:
-                    violations.append(
-                        f"Sample {sid!r} treatment dose value is zero"
-                    )
+                    violations.append(f"Sample {sid!r} treatment dose value is zero")
 
             if unit == "":
-                violations.append(
-                    f"Sample {sid!r} treatment dose has empty unit"
-                )
+                violations.append(f"Sample {sid!r} treatment dose has empty unit")
             elif not unit.strip():
                 violations.append(
                     f"Sample {sid!r} treatment dose unit is whitespace-only"
@@ -474,17 +468,13 @@ def _check_pairing(design: ExperimentDesign) -> list[str]:
     if design.pairing is not None:
         paired_samples = [s for s in design.samples if s.pair_id is not None]
         if not paired_samples:
-            violations.append(
-                "Pairing is defined but no samples have a pair_id"
-            )
+            violations.append("Pairing is defined but no samples have a pair_id")
 
         # P-02: each pair_id must have at least 2 samples
         pair_counts = _count_by_pair_id(design.samples)
         for pair_id, count in sorted(pair_counts.items()):
             if count < 2:
-                violations.append(
-                    f"Pair {pair_id!r} has only {count} sample"
-                )
+                violations.append(f"Pair {pair_id!r} has only {count} sample")
 
     return violations
 

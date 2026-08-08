@@ -173,8 +173,12 @@ class TestLoadSampleMetadata:
     def test_valid_json(self) -> None:
         src = FIXTURES / "synthetic_metadata.json"
         expr_ids = [
-            "PC9_DMSO_1", "PC9_DMSO_2", "PC9_DMSO_3",
-            "PC9_osi_DTP_1", "PC9_osi_DTP_2", "PC9_osi_DTP_3",
+            "PC9_DMSO_1",
+            "PC9_DMSO_2",
+            "PC9_DMSO_3",
+            "PC9_osi_DTP_1",
+            "PC9_osi_DTP_2",
+            "PC9_osi_DTP_3",
         ]
         result = load_sample_metadata(src, expression_sample_ids=expr_ids)
         assert result.sample_ids == set(expr_ids)
@@ -197,9 +201,7 @@ class TestLoadSampleMetadata:
 
     def test_missing_condition(self, tmp_path: Path) -> None:
         f = tmp_path / "no_condition.json"
-        f.write_text(
-            '{"samples": {"S1": {"cell_line": "PC9"}}}', encoding="utf-8"
-        )
+        f.write_text('{"samples": {"S1": {"cell_line": "PC9"}}}', encoding="utf-8")
         with pytest.raises(MetadataFileError, match="'condition'"):
             load_sample_metadata(f)
 
@@ -251,9 +253,7 @@ class TestLoadSampleMetadata:
     def test_missing_batch_recorded_as_unknown(self, tmp_path: Path) -> None:
         f = tmp_path / "no_batch.json"
         f.write_text(
-            '{"samples": {'
-            '"S1": {"condition": "DMSO"},'
-            '"S2": {"condition": "treated"}}}',
+            '{"samples": {"S1": {"condition": "DMSO"},"S2": {"condition": "treated"}}}',
             encoding="utf-8",
         )
         result = load_sample_metadata(f, expression_sample_ids=["S1", "S2"])
@@ -275,6 +275,7 @@ class TestClassifyExpressionValues:
         genes: list[str] | None = None,
     ) -> object:
         import pandas as pd
+
         if genes is None:
             genes = [f"G{i}" for i in range(len(values))]
         return pd.DataFrame(
@@ -283,51 +284,63 @@ class TestClassifyExpressionValues:
         )
 
     def test_integer_count_classification(self) -> None:
-        df = self._make_df([
-            [100, 200, 300],
-            [50, 60, 70],
-        ])
+        df = self._make_df(
+            [
+                [100, 200, 300],
+                [50, 60, 70],
+            ]
+        )
         result = classify_expression_values(df)
         assert result.value_type == ValueType.RAW_INTEGER_COUNTS
 
     def test_non_integer_estimated_classification(self) -> None:
-        df = self._make_df([
-            [100.5, 200.3, 300.7],
-            [50.1, 60.9, 70.2],
-        ])
+        df = self._make_df(
+            [
+                [100.5, 200.3, 300.7],
+                [50.1, 60.9, 70.2],
+            ]
+        )
         result = classify_expression_values(df)
         assert result.value_type == ValueType.NON_INTEGER_ESTIMATED_COUNTS
 
     def test_transformed_value_classification(self) -> None:
-        df = self._make_df([
-            [-1.5, 2.3, 0.5],
-            [1.2, -0.3, 4.0],
-        ])
+        df = self._make_df(
+            [
+                [-1.5, 2.3, 0.5],
+                [1.2, -0.3, 4.0],
+            ]
+        )
         result = classify_expression_values(df)
         assert result.value_type == ValueType.TRANSFORMED_VALUES
 
     def test_unknown_classification(self) -> None:
         # Empty dataframe with just gene column
         import pandas as pd
+
         df = pd.DataFrame({"gene": ["G1"], "S1": [0.0]})
         result = classify_expression_values(df)
         assert result.value_type == ValueType.UNKNOWN
 
     def test_override_classification(self) -> None:
-        df = self._make_df([
-            [100, 200, 300],
-            [50, 60, 70],
-        ])
+        df = self._make_df(
+            [
+                [100, 200, 300],
+                [50, 60, 70],
+            ]
+        )
         result = classify_expression_values(
-            df, value_type_override=ValueType.TRANSFORMED_VALUES,
+            df,
+            value_type_override=ValueType.TRANSFORMED_VALUES,
         )
         assert result.value_type == ValueType.TRANSFORMED_VALUES
 
     def test_mixed_integer_non_integer(self) -> None:
-        df = self._make_df([
-            [100, 200.5, 300],
-            [50, 60, 70],
-        ])
+        df = self._make_df(
+            [
+                [100, 200.5, 300],
+                [50, 60, 70],
+            ]
+        )
         result = classify_expression_values(df)
         assert result.value_type == ValueType.NORMALIZED_NONNEGATIVE_VALUES
 
@@ -382,7 +395,8 @@ class TestInspectGeneIdentifiers:
     def test_override_classification(self) -> None:
         ids = ["EGFR", "TP53"]
         result = inspect_gene_identifiers(
-            ids, gene_id_type_override=GeneIdType.ENTREZ_IDS,
+            ids,
+            gene_id_type_override=GeneIdType.ENTREZ_IDS,
         )
         assert result.id_type == GeneIdType.ENTREZ_IDS
 
@@ -418,8 +432,11 @@ class TestValidateContrast:
 
     def test_valid_contrast(self) -> None:
         conditions = {
-            "S1": "DMSO", "S2": "DMSO", "S3": "DMSO",
-            "S4": "treated", "S5": "treated",
+            "S1": "DMSO",
+            "S2": "DMSO",
+            "S3": "DMSO",
+            "S4": "treated",
+            "S5": "treated",
         }
         result = validate_contrast(conditions, "DMSO", "treated")
         assert result["valid"] is True

@@ -60,11 +60,7 @@ def _check_factor_references(
 ) -> list[str]:
     """Ensure every factor_reference matches a declared factor_id."""
     valid_ids = {f.factor_id for f in design.factors}
-    missing = [
-        ref
-        for ref in specification.factor_references
-        if ref not in valid_ids
-    ]
+    missing = [ref for ref in specification.factor_references if ref not in valid_ids]
 
     if not missing:
         return []
@@ -82,11 +78,7 @@ def _check_contrast_references(
 ) -> list[str]:
     """Ensure every contrast_reference matches a declared contrast_id."""
     valid_ids = {c.contrast_id for c in design.contrasts}
-    missing = [
-        ref
-        for ref in specification.contrast_references
-        if ref not in valid_ids
-    ]
+    missing = [ref for ref in specification.contrast_references if ref not in valid_ids]
 
     if not missing:
         return []

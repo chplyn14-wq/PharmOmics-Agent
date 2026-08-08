@@ -195,7 +195,8 @@ def from_load_results(
 
     # Build metadata dicts
     feature_meta = _build_feature_metadata(
-        expr_result.gene_ids, gene_inspection,
+        expr_result.gene_ids,
+        gene_inspection,
     )
     sample_meta = _build_sample_metadata(meta_result)
 

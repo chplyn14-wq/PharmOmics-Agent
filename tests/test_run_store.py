@@ -17,9 +17,7 @@ from pharmomics.run_store import (
 class TestGenerateRunId:
     """Verify run ID generation."""
 
-    _PATTERN = re.compile(
-        r"^run-\d{8}-\d{6}-[0-9a-f]{8}$"
-    )
+    _PATTERN = re.compile(r"^run-\d{8}-\d{6}-[0-9a-f]{8}$")
 
     def test_format(self) -> None:
         run_id = generate_run_id()

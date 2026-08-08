@@ -68,8 +68,11 @@ class TestBHNormal:
         monotonicity: already non-decreasing
         """
         raw = (
-            _gp("G0", 0.001), _gp("G1", 0.02), _gp("G2", 0.05),
-            _gp("G3", 0.08), _gp("G4", 0.3),
+            _gp("G0", 0.001),
+            _gp("G1", 0.02),
+            _gp("G2", 0.05),
+            _gp("G3", 0.08),
+            _gp("G4", 0.3),
         )
         result = compute_bh_adjusted_p_values(raw)
 
@@ -215,8 +218,10 @@ class TestEdgeCases:
         result: [0.0133, 0.0133, 0.0133, 0.05]
         """
         raw = (
-            _gp("G0", 0.01), _gp("G1", 0.01),
-            _gp("G2", 0.01), _gp("G3", 0.05),
+            _gp("G0", 0.01),
+            _gp("G1", 0.01),
+            _gp("G2", 0.01),
+            _gp("G3", 0.05),
         )
         result = compute_bh_adjusted_p_values(raw)
 
@@ -238,8 +243,11 @@ class TestMonotonicity:
     def test_monotonicity_property(self) -> None:
         """After sorting by raw_p_value, adj_p_value is non-decreasing."""
         raw = (
-            _gp("G0", 0.3), _gp("G1", 0.001), _gp("G2", 0.1),
-            _gp("G3", 0.005), _gp("G4", 0.05),
+            _gp("G0", 0.3),
+            _gp("G1", 0.001),
+            _gp("G2", 0.1),
+            _gp("G3", 0.005),
+            _gp("G4", 0.05),
         )
         result = compute_bh_adjusted_p_values(raw)
 

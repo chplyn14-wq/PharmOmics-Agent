@@ -171,7 +171,8 @@ class IngestionResult:
             )
         if not self.software_version:
             object.__setattr__(
-                self, "software_version",
+                self,
+                "software_version",
                 getattr(pharmomics, "__version__", "0.1.0"),
             )
 
@@ -410,9 +411,7 @@ def _load_metadata_from_json(path: Path) -> pd.DataFrame:
 
     samples = data["samples"]
     if not isinstance(samples, dict):
-        raise MetadataFileError(
-            "'samples' must map sample_id to metadata"
-        )
+        raise MetadataFileError("'samples' must map sample_id to metadata")
 
     records = []
     for sample_id, meta in samples.items():
@@ -608,7 +607,7 @@ def classify_expression_values(
         value_type = ValueType.TRANSFORMED_VALUES
         if negatives < total * 0.01:
             warnings.append(
-                f"Found {negatives} negative values ({negatives/total*100:.1f}%); "
+                f"Found {negatives} negative values ({negatives / total * 100:.1f}%); "
                 "classified as transformed_values"
             )
     elif integer_count == len(non_zero_values) and len(non_zero_values) > 0:
@@ -620,8 +619,8 @@ def classify_expression_values(
         if non_integer_fraction > 0.5:
             value_type = ValueType.NON_INTEGER_ESTIMATED_COUNTS
             warnings.append(
-                f"{non_integer_fraction*100:.1f}% of non-zero values are non-integer; "
-                "classified as non_integer_estimated_counts. "
+                f"{non_integer_fraction * 100:.1f}% of non-zero values "
+                "are non-integer; classified as non_integer_estimated_counts. "
                 "DE method selection requires verification of quantification source."
             )
         else:
@@ -708,12 +707,14 @@ def inspect_gene_identifiers(
             normalized_ids.append(gid)
 
     # Determine overall type
-    categories_with_hits = sum([
-        len(ensembl_ids) > 0,
-        len(hgnc_symbols) > 0,
-        len(entrez_ids) > 0,
-        len(unknown_ids) > 0,
-    ])
+    categories_with_hits = sum(
+        [
+            len(ensembl_ids) > 0,
+            len(hgnc_symbols) > 0,
+            len(entrez_ids) > 0,
+            len(unknown_ids) > 0,
+        ]
+    )
 
     if gene_id_type_override is not None:
         id_type = gene_id_type_override
@@ -919,15 +920,12 @@ def ingest(
 
     # Contrast validation (optional)
     if contrast_control and contrast_treatment:
-        validate_contrast(
-            meta_result.conditions, contrast_control, contrast_treatment
-        )
+        validate_contrast(meta_result.conditions, contrast_control, contrast_treatment)
 
     warnings = list(value_class.warnings)
     if gene_inspection.duplicate_ids:
         warnings.append(
-            "Duplicate gene identifiers found:"
-            f" {gene_inspection.duplicate_ids[:10]}"
+            f"Duplicate gene identifiers found: {gene_inspection.duplicate_ids[:10]}"
         )
     if gene_inspection.id_type == GeneIdType.MIXED:
         warnings.append(

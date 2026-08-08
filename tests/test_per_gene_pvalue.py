@@ -267,21 +267,25 @@ class TestComputePerGenePValueInsufficientSamples:
 
     def test_comparison_one_sample(self) -> None:
         """comparison=1, reference=2 -> NaN."""
-        comp_df = pd.DataFrame({
-            "gene": ["G0"],
-            "S0": [10.0],
-        })
+        comp_df = pd.DataFrame(
+            {
+                "gene": ["G0"],
+                "S0": [10.0],
+            }
+        )
         comp_slice = MatrixSlice(
             matrix_id="mx-comp",
             sample_ids=["S0"],
             feature_ids=["G0"],
             dataframe=comp_df,
         )
-        ref_df = pd.DataFrame({
-            "gene": ["G0"],
-            "S1": [20.0],
-            "S2": [22.0],
-        })
+        ref_df = pd.DataFrame(
+            {
+                "gene": ["G0"],
+                "S1": [20.0],
+                "S2": [22.0],
+            }
+        )
         ref_slice = MatrixSlice(
             matrix_id="mx-ref",
             sample_ids=["S1", "S2"],
@@ -296,21 +300,25 @@ class TestComputePerGenePValueInsufficientSamples:
 
     def test_reference_one_sample(self) -> None:
         """comparison=2, reference=1 -> NaN."""
-        comp_df = pd.DataFrame({
-            "gene": ["G0"],
-            "S0": [10.0],
-            "S1": [12.0],
-        })
+        comp_df = pd.DataFrame(
+            {
+                "gene": ["G0"],
+                "S0": [10.0],
+                "S1": [12.0],
+            }
+        )
         comp_slice = MatrixSlice(
             matrix_id="mx-comp",
             sample_ids=["S0", "S1"],
             feature_ids=["G0"],
             dataframe=comp_df,
         )
-        ref_df = pd.DataFrame({
-            "gene": ["G0"],
-            "S2": [20.0],
-        })
+        ref_df = pd.DataFrame(
+            {
+                "gene": ["G0"],
+                "S2": [20.0],
+            }
+        )
         ref_slice = MatrixSlice(
             matrix_id="mx-ref",
             sample_ids=["S2"],
@@ -465,22 +473,26 @@ class TestComputePerGenePValueNonFinite:
 
     def test_comparison_contains_nan(self) -> None:
         """comp has NaN -> NaN."""
-        comp_df = pd.DataFrame({
-            "gene": ["G0"],
-            "S0": [float("nan")],
-            "S1": [12.0],
-        })
+        comp_df = pd.DataFrame(
+            {
+                "gene": ["G0"],
+                "S0": [float("nan")],
+                "S1": [12.0],
+            }
+        )
         comp_slice = MatrixSlice(
             matrix_id="mx-comp",
             sample_ids=["S0", "S1"],
             feature_ids=["G0"],
             dataframe=comp_df,
         )
-        ref_df = pd.DataFrame({
-            "gene": ["G0"],
-            "S2": [20.0],
-            "S3": [22.0],
-        })
+        ref_df = pd.DataFrame(
+            {
+                "gene": ["G0"],
+                "S2": [20.0],
+                "S3": [22.0],
+            }
+        )
         ref_slice = MatrixSlice(
             matrix_id="mx-ref",
             sample_ids=["S2", "S3"],
@@ -495,22 +507,26 @@ class TestComputePerGenePValueNonFinite:
 
     def test_reference_contains_inf(self) -> None:
         """ref has Inf -> NaN."""
-        comp_df = pd.DataFrame({
-            "gene": ["G0"],
-            "S0": [10.0],
-            "S1": [12.0],
-        })
+        comp_df = pd.DataFrame(
+            {
+                "gene": ["G0"],
+                "S0": [10.0],
+                "S1": [12.0],
+            }
+        )
         comp_slice = MatrixSlice(
             matrix_id="mx-comp",
             sample_ids=["S0", "S1"],
             feature_ids=["G0"],
             dataframe=comp_df,
         )
-        ref_df = pd.DataFrame({
-            "gene": ["G0"],
-            "S2": [float("inf")],
-            "S3": [22.0],
-        })
+        ref_df = pd.DataFrame(
+            {
+                "gene": ["G0"],
+                "S2": [float("inf")],
+                "S3": [22.0],
+            }
+        )
         ref_slice = MatrixSlice(
             matrix_id="mx-ref",
             sample_ids=["S2", "S3"],
@@ -525,22 +541,26 @@ class TestComputePerGenePValueNonFinite:
 
     def test_mixed_finite_and_non_finite(self) -> None:
         """G0 has NaN in comp, G1 is fully valid, G2 has Inf in ref."""
-        comp_df = pd.DataFrame({
-            "gene": ["G0", "G1", "G2"],
-            "S0": [float("nan"), 10.0, 30.0],
-            "S1": [12.0, 12.0, 32.0],
-        })
+        comp_df = pd.DataFrame(
+            {
+                "gene": ["G0", "G1", "G2"],
+                "S0": [float("nan"), 10.0, 30.0],
+                "S1": [12.0, 12.0, 32.0],
+            }
+        )
         comp_slice = MatrixSlice(
             matrix_id="mx-mixed",
             sample_ids=["S0", "S1"],
             feature_ids=["G0", "G1", "G2"],
             dataframe=comp_df,
         )
-        ref_df = pd.DataFrame({
-            "gene": ["G0", "G1", "G2"],
-            "S2": [20.0, 20.0, float("inf")],
-            "S3": [22.0, 22.0, 44.0],
-        })
+        ref_df = pd.DataFrame(
+            {
+                "gene": ["G0", "G1", "G2"],
+                "S2": [20.0, 20.0, float("inf")],
+                "S3": [22.0, 22.0, 44.0],
+            }
+        )
         ref_slice = MatrixSlice(
             matrix_id="mx-mixed-ref",
             sample_ids=["S2", "S3"],
@@ -557,22 +577,26 @@ class TestComputePerGenePValueNonFinite:
 
     def test_mixed_finite_and_non_finite_both_groups(self) -> None:
         """One gene with NaN in comp (G0), one clean (G1)."""
-        comp_df = pd.DataFrame({
-            "gene": ["G0", "G1"],
-            "S0": [float("nan"), 10.0],
-            "S1": [12.0, 12.0],
-        })
+        comp_df = pd.DataFrame(
+            {
+                "gene": ["G0", "G1"],
+                "S0": [float("nan"), 10.0],
+                "S1": [12.0, 12.0],
+            }
+        )
         comp_slice = MatrixSlice(
             matrix_id="mx-mixed2",
             sample_ids=["S0", "S1"],
             feature_ids=["G0", "G1"],
             dataframe=comp_df,
         )
-        ref_df = pd.DataFrame({
-            "gene": ["G0", "G1"],
-            "S2": [20.0, 20.0],
-            "S3": [22.0, 22.0],
-        })
+        ref_df = pd.DataFrame(
+            {
+                "gene": ["G0", "G1"],
+                "S2": [20.0, 20.0],
+                "S3": [22.0, 22.0],
+            }
+        )
         ref_slice = MatrixSlice(
             matrix_id="mx-mixed2-ref",
             sample_ids=["S2", "S3"],

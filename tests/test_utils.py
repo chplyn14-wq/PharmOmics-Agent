@@ -22,20 +22,14 @@ class TestHashFileSha256:
         f = tmp_path / "test.txt"
         f.write_bytes(b"hello\n")
         digest = hash_file_sha256(f)
-        expected = (
-            "5891b5b522d5df086d0ff0b110fbd9d2"
-            "1bb4fc7163af34d08286a2e846f6be03"
-        )
+        expected = "5891b5b522d5df086d0ff0b110fbd9d21bb4fc7163af34d08286a2e846f6be03"
         assert digest == expected
 
     def test_empty_file(self, tmp_path: Path) -> None:
         f = tmp_path / "empty.txt"
         f.write_bytes(b"")
         digest = hash_file_sha256(f)
-        expected = (
-            "e3b0c44298fc1c149afbf4c8996fb924"
-            "27ae41e4649b934ca495991b7852b855"
-        )
+        expected = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
         assert digest == expected
 
     def test_lowercase_hex(self, tmp_path: Path) -> None:
