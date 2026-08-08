@@ -33,9 +33,16 @@ class TestRunAnalysisSuccess:
         assert len(result.gene_results) == 6
 
     def test_no_placeholder_warning(self) -> None:
+        """Demo data has zero within-group variance → NaN p-values → warning."""
         omics, design, spec = make_demo_inputs()
         result = run_analysis(spec, design, omics)
-        assert result.warnings == ()
+        # Zero variance within groups produces NaN p-values; the warning
+        # must be surfaced so the user is not silently misled.
+        assert len(result.warnings) == 1
+        assert "undefined p-values" in result.warnings[0]
+        assert "zero within-group variance" in result.warnings[0]
+        # All 6 demo genes are affected
+        assert "6 gene(s)" in result.warnings[0]
 
     def test_result_structure_valid(self) -> None:
         omics, design, spec = make_demo_inputs()
@@ -86,8 +93,9 @@ class TestEndToEndDifferentialAnalysis:
         myc = next(g for g in result.gene_results if g.gene_id == "MYC")
         assert myc.base_mean == pytest.approx(750.0, abs=1e-9)
 
-        # No warnings in successful run
-        assert result.warnings == ()
+        # Demo data has zero within-group variance → NaN p-values → warning
+        assert len(result.warnings) == 1
+        assert "6 gene(s)" in result.warnings[0]
 
     def test_gene_results_order_preserved(self) -> None:
         """Gene results appear in original feature-id order."""
@@ -95,6 +103,206 @@ class TestEndToEndDifferentialAnalysis:
         result = run_analysis(spec, design, omics)
         expected_order = ["EGFR", "ERBB2", "TP53", "MYC", "KRAS", "PTEN"]
         assert [g.gene_id for g in result.gene_results] == expected_order
+
+
+class TestInsufficientReplicates:
+    """run_analysis rejects contrasts with < 2 samples per group."""
+
+    def test_single_sample_per_group_raises(self) -> None:
+        """One sample in each group → AnalysisValidationError before inference."""
+        import pandas as pd
+
+        from pharmomics.analysis.schemas import AnalysisSpecification
+        from pharmomics.experiment.enums import FactorType, GroupRole
+        from pharmomics.experiment.schemas import (
+            Contrast,
+            DesignSample,
+            ExperimentalFactor,
+            ExperimentalGroup,
+            ExperimentDesign,
+        )
+        from pharmomics.omics.enums import (
+            MeasurementType,
+            Modality,
+            NormalizationStatus,
+        )
+        from pharmomics.omics.schemas import OmicsMatrix
+
+        df = pd.DataFrame(
+            {"feature_id": ["GeneA"]}
+            | {
+                "trt_1": [100.0],
+                "ref_1": [200.0],
+            },
+        )
+
+        omics = OmicsMatrix(
+            matrix_id="mx-single",
+            schema_version="1.0.0",
+            modality=Modality.TRANSCRIPTOMICS,
+            feature_type="gene",
+            measurement_type=MeasurementType.ESTIMATED_COUNTS,
+            normalization_status=NormalizationStatus.RAW,
+            n_features=1,
+            n_samples=2,
+            feature_ids=["GeneA"],
+            sample_ids=["trt_1", "ref_1"],
+            dataframe=df,
+            created_at="2026-01-01T00:00:00Z",
+        )
+
+        design = ExperimentDesign(
+            experiment_id="exp-single",
+            description="Single replicate per group",
+            samples=[
+                DesignSample(
+                    sample_id="trt_1",
+                    group_id="trt",
+                    factor_values={"condition": "treatment"},
+                ),
+                DesignSample(
+                    sample_id="ref_1",
+                    group_id="ref",
+                    factor_values={"condition": "reference"},
+                ),
+            ],
+            groups=[
+                ExperimentalGroup(
+                    group_id="trt", label="Treatment", role=GroupRole.TREATMENT
+                ),
+                ExperimentalGroup(
+                    group_id="ref", label="Reference", role=GroupRole.CONTROL
+                ),
+            ],
+            factors=[
+                ExperimentalFactor(
+                    factor_id="condition",
+                    factor_type=FactorType.CATEGORICAL,
+                    levels=["treatment", "reference"],
+                ),
+            ],
+            contrasts=[
+                Contrast(
+                    contrast_id="trt_vs_ref",
+                    comparison_group_id="trt",
+                    reference_group_id="ref",
+                    description="Treatment vs Reference",
+                ),
+            ],
+        )
+
+        spec = AnalysisSpecification(
+            analysis_type="differential_analysis",
+            factor_references=["condition"],
+            contrast_references=["trt_vs_ref"],
+        )
+
+        with pytest.raises(AnalysisValidationError) as excinfo:
+            run_analysis(spec, design, omics)
+
+        assert "Insufficient replicates" in str(excinfo.value)
+        assert "1 sample(s)" in str(excinfo.value)
+
+    def test_two_vs_one_raises(self) -> None:
+        """Two samples in comparison but only one in reference → rejected."""
+        import pandas as pd
+
+        from pharmomics.analysis.schemas import AnalysisSpecification
+        from pharmomics.experiment.enums import FactorType, GroupRole
+        from pharmomics.experiment.schemas import (
+            Contrast,
+            DesignSample,
+            ExperimentalFactor,
+            ExperimentalGroup,
+            ExperimentDesign,
+        )
+        from pharmomics.omics.enums import (
+            MeasurementType,
+            Modality,
+            NormalizationStatus,
+        )
+        from pharmomics.omics.schemas import OmicsMatrix
+
+        df = pd.DataFrame(
+            {"feature_id": ["GeneA"]}
+            | {
+                "trt_1": [100.0],
+                "trt_2": [110.0],
+                "ref_1": [200.0],
+            },
+        )
+
+        omics = OmicsMatrix(
+            matrix_id="mx-asymmetric",
+            schema_version="1.0.0",
+            modality=Modality.TRANSCRIPTOMICS,
+            feature_type="gene",
+            measurement_type=MeasurementType.ESTIMATED_COUNTS,
+            normalization_status=NormalizationStatus.RAW,
+            n_features=1,
+            n_samples=3,
+            feature_ids=["GeneA"],
+            sample_ids=["trt_1", "trt_2", "ref_1"],
+            dataframe=df,
+            created_at="2026-01-01T00:00:00Z",
+        )
+
+        design = ExperimentDesign(
+            experiment_id="exp-asymmetric",
+            description="2 vs 1 replicates",
+            samples=[
+                DesignSample(
+                    sample_id="trt_1",
+                    group_id="trt",
+                    factor_values={"condition": "treatment"},
+                ),
+                DesignSample(
+                    sample_id="trt_2",
+                    group_id="trt",
+                    factor_values={"condition": "treatment"},
+                ),
+                DesignSample(
+                    sample_id="ref_1",
+                    group_id="ref",
+                    factor_values={"condition": "reference"},
+                ),
+            ],
+            groups=[
+                ExperimentalGroup(
+                    group_id="trt", label="Treatment", role=GroupRole.TREATMENT
+                ),
+                ExperimentalGroup(
+                    group_id="ref", label="Reference", role=GroupRole.CONTROL
+                ),
+            ],
+            factors=[
+                ExperimentalFactor(
+                    factor_id="condition",
+                    factor_type=FactorType.CATEGORICAL,
+                    levels=["treatment", "reference"],
+                ),
+            ],
+            contrasts=[
+                Contrast(
+                    contrast_id="trt_vs_ref",
+                    comparison_group_id="trt",
+                    reference_group_id="ref",
+                    description="Treatment vs Reference",
+                ),
+            ],
+        )
+
+        spec = AnalysisSpecification(
+            analysis_type="differential_analysis",
+            factor_references=["condition"],
+            contrast_references=["trt_vs_ref"],
+        )
+
+        with pytest.raises(AnalysisValidationError) as excinfo:
+            run_analysis(spec, design, omics)
+
+        assert "Insufficient replicates" in str(excinfo.value)
+        assert "reference group has 1 sample(s)" in str(excinfo.value)
 
 
 class TestUnsupportedAnalysisType:
@@ -414,3 +622,141 @@ class TestEndToEndFiniteStatistics:
             assert math.isfinite(g.base_mean)
             assert math.isfinite(g.p_value)
             assert math.isfinite(g.adj_p_value)
+
+
+class TestPartialNaNWarning:
+    """Regression: when one gene has zero variance among otherwise finite
+    genes, the analysis succeeds but a warning is emitted listing the
+    affected gene(s)."""
+
+    @staticmethod
+    def _make_partial_nan_fixture():
+        """Build (OmicsMatrix, ExperimentDesign, AnalysisSpecification) where
+        GeneB has zero within-group variance (identical replicates) but
+        all other genes have non-zero variance."""
+        import pandas as pd
+
+        from pharmomics.analysis.schemas import AnalysisSpecification
+        from pharmomics.experiment.enums import FactorType, GroupRole
+        from pharmomics.experiment.schemas import (
+            Contrast,
+            DesignSample,
+            ExperimentalFactor,
+            ExperimentalGroup,
+            ExperimentDesign,
+        )
+        from pharmomics.omics.enums import (
+            MeasurementType,
+            Modality,
+            NormalizationStatus,
+        )
+        from pharmomics.omics.schemas import OmicsMatrix
+
+        genes = ["GeneA", "GeneB", "GeneC"]
+        comp_samples = ["trt_1", "trt_2", "trt_3"]
+        ref_samples = ["ref_1", "ref_2", "ref_3"]
+        all_samples = comp_samples + ref_samples
+
+        # GeneA: different values per replicate, large diff → finite p
+        # GeneB: IDENTICAL replicates in both groups → zero variance → NaN
+        # GeneC: different values per replicate, moderate diff → finite p
+        df = pd.DataFrame(
+            {"feature_id": genes}
+            | {
+                "trt_1": [10.0, 100.0, 50.0],
+                "trt_2": [12.0, 100.0, 55.0],
+                "trt_3": [14.0, 100.0, 45.0],
+                "ref_1": [100.0, 200.0, 20.0],
+                "ref_2": [110.0, 200.0, 25.0],
+                "ref_3": [120.0, 200.0, 15.0],
+            },
+        )
+
+        omics = OmicsMatrix(
+            matrix_id="mx-partial-nan",
+            schema_version="1.0.0",
+            modality=Modality.TRANSCRIPTOMICS,
+            feature_type="gene",
+            measurement_type=MeasurementType.ESTIMATED_COUNTS,
+            normalization_status=NormalizationStatus.RAW,
+            n_features=len(genes),
+            n_samples=len(all_samples),
+            feature_ids=list(genes),
+            sample_ids=list(all_samples),
+            dataframe=df,
+            created_at="2026-01-01T00:00:00Z",
+        )
+
+        design = ExperimentDesign(
+            experiment_id="exp-partial-nan",
+            description="Partial NaN verification: one gene with zero variance",
+            samples=[
+                DesignSample(sample_id="trt_1", group_id="trt"),
+                DesignSample(sample_id="trt_2", group_id="trt"),
+                DesignSample(sample_id="trt_3", group_id="trt"),
+                DesignSample(sample_id="ref_1", group_id="ref"),
+                DesignSample(sample_id="ref_2", group_id="ref"),
+                DesignSample(sample_id="ref_3", group_id="ref"),
+            ],
+            groups=[
+                ExperimentalGroup(
+                    group_id="trt", label="Treatment", role=GroupRole.TREATMENT
+                ),
+                ExperimentalGroup(
+                    group_id="ref", label="Reference", role=GroupRole.CONTROL
+                ),
+            ],
+            factors=[
+                ExperimentalFactor(
+                    factor_id="condition",
+                    factor_type=FactorType.CATEGORICAL,
+                    levels=["treatment", "reference"],
+                ),
+            ],
+            contrasts=[
+                Contrast(
+                    contrast_id="trt_vs_ref",
+                    comparison_group_id="trt",
+                    reference_group_id="ref",
+                    description="Treatment vs Reference",
+                ),
+            ],
+        )
+
+        spec = AnalysisSpecification(
+            analysis_type="differential_analysis",
+            factor_references=["condition"],
+            contrast_references=["trt_vs_ref"],
+        )
+
+        return omics, design, spec
+
+    def test_analysis_succeeds_with_warning(self) -> None:
+        """Analysis completes; a warning lists the NaN gene."""
+        omics, design, spec = self._make_partial_nan_fixture()
+        result = run_analysis(spec, design, omics)
+
+        assert result.n_genes_tested == 3
+        assert len(result.warnings) == 1
+        assert "1 gene(s)" in result.warnings[0]
+        assert "GeneB" in result.warnings[0]
+
+    def test_nan_gene_is_not_significant(self) -> None:
+        """The zero-variance gene is marked non-significant."""
+        omics, design, spec = self._make_partial_nan_fixture()
+        result = run_analysis(spec, design, omics)
+
+        gene_b = next(g for g in result.gene_results if g.gene_id == "GeneB")
+        assert math.isnan(gene_b.p_value)
+        assert math.isnan(gene_b.adj_p_value)
+        assert gene_b.significant is False
+
+    def test_finite_genes_unchanged(self) -> None:
+        """Non-zero-variance genes receive finite p-values."""
+        omics, design, spec = self._make_partial_nan_fixture()
+        result = run_analysis(spec, design, omics)
+
+        for gid in ("GeneA", "GeneC"):
+            gene = next(g for g in result.gene_results if g.gene_id == gid)
+            assert math.isfinite(gene.p_value), f"{gid} p_value is not finite"
+            assert math.isfinite(gene.adj_p_value), f"{gid} adj_p_value is not finite"

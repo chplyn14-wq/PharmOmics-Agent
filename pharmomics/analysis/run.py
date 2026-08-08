@@ -7,6 +7,7 @@ validates inputs, dispatches by analysis type, and returns a structured
 
 from __future__ import annotations
 
+import math
 from typing import TYPE_CHECKING
 
 from pharmomics.analysis.assembly import assemble_gene_differentials
@@ -64,6 +65,42 @@ def run_analysis(
     )
 
 
+def _collect_nan_warnings(
+    gene_results: tuple[object, ...],
+) -> list[str]:
+    """Return warning strings for genes with NaN p-values or adj-p-values.
+
+    Parameters
+    ----------
+    gene_results : tuple
+        Output of ``assemble_gene_differentials()``.  Each element has
+        ``gene_id``, ``p_value``, and ``adj_p_value`` attributes.
+
+    Returns
+    -------
+    list[str]
+        Zero or one warning.  If any gene has a NaN p-value or adjusted
+        p-value, a single deterministic warning lists the count and
+        affected gene IDs (sorted, capped at 10 for readability).
+    """
+    nan_genes = [
+        g.gene_id
+        for g in gene_results
+        if math.isnan(g.p_value) or math.isnan(g.adj_p_value)
+    ]
+    if not nan_genes:
+        return []
+
+    nan_genes.sort()
+    shown = nan_genes[:10]
+    note = f" (+{len(nan_genes) - 10} more)" if len(nan_genes) > 10 else ""
+    return [
+        f"{len(nan_genes)} gene(s) had undefined p-values "
+        f"(insufficient replicates or zero within-group variance): "
+        f"{', '.join(shown)}{note}"
+    ]
+
+
 def _execute_differential_analysis(
     specification: AnalysisSpecification,
     design: ExperimentDesign,
@@ -111,6 +148,20 @@ def _execute_differential_analysis(
     contrast_id = specification.contrast_references[0]
 
     resolved = resolve_contrast(design, contrast_id)
+
+    # --- Validate sufficient replicates before statistical inference ------
+    # Welch's t-test requires >= 2 samples per group to estimate variance.
+    # Fail fast with a clear error rather than producing silent NaN values.
+    comp_n = len(resolved.comparison_sample_ids)
+    ref_n = len(resolved.reference_sample_ids)
+    if comp_n < 2 or ref_n < 2:
+        raise AnalysisValidationError(
+            f"Insufficient replicates for contrast {resolved.contrast_id!r}: "
+            f"comparison group has {comp_n} sample(s), "
+            f"reference group has {ref_n} sample(s). "
+            "At least 2 samples per group are required for Welch's t-test."
+        )
+
     diff_input = prepare_differential_inputs(omics, resolved)
     mean_expr = compute_mean_expression(diff_input)
     log2fc = compute_log2_fold_change(mean_expr)
@@ -120,10 +171,13 @@ def _execute_differential_analysis(
         mean_expr, log2fc, pvals, adj, specification
     )
 
+    # --- Surface per-gene NaN statistics as warnings ----------------------
+    warnings = _collect_nan_warnings(gene_results)
+
     return AnalysisResult(
         analysis_type="differential_analysis",
         contrast_id=resolved.contrast_id,
         gene_results=gene_results,
         n_genes_tested=len(gene_results),
-        warnings=(),
+        warnings=tuple(warnings),
     )

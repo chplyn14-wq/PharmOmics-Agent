@@ -121,9 +121,7 @@ class TestEmptyGeneResults:
         )
         # Only the header line and separator line follow; no data rows
         table_lines = [
-            line
-            for line in lines[gene_section_start:]
-            if line.startswith("|")
+            line for line in lines[gene_section_start:] if line.startswith("|")
         ]
         assert len(table_lines) == 2  # header + separator
 
@@ -388,6 +386,8 @@ class TestEndToEndPipeline:
 
     def test_end_to_end_nan_p_values_rendered(self) -> None:
         """Demo data has NaN p-values → rendered as NaN."""
+        import math
+
         from pharmomics.analysis.example_data import make_demo_inputs
         from pharmomics.analysis.run import run_analysis
 
@@ -397,16 +397,16 @@ class TestEndToEndPipeline:
 
         # All genes have NaN p-values in demo data (zero variance)
         for gene in result.gene_results:
-            import math
-
             if math.isnan(gene.p_value):
+                # Only search within the gene results table section
+                table_section = report.split("## Gene Results")[1]
                 gene_row = [
-                    line for line in report.split("\n") if gene.gene_id in line
+                    line for line in table_section.split("\n") if gene.gene_id in line
                 ][0]
                 assert "NaN" in gene_row
 
-    def test_end_to_end_no_warnings(self) -> None:
-        """Successful demo run has no warnings."""
+    def test_end_to_end_warnings_contain_nan_warning(self) -> None:
+        """Demo run produces a NaN warning since all p-values are NaN."""
         from pharmomics.analysis.example_data import make_demo_inputs
         from pharmomics.analysis.run import run_analysis
 
@@ -414,13 +414,16 @@ class TestEndToEndPipeline:
         result = run_analysis(spec, design, omics)
         report = render_markdown_report(result)
 
-        assert result.warnings == ()
-        # Warnings section should show None
+        assert len(result.warnings) == 1
+        assert "undefined p-values" in result.warnings[0]
+        assert "6 gene(s)" in result.warnings[0]
+        # Warnings section should show the warning text, not None
         warnings_section = report.split("## Warnings")[1].split("## Gene")[0]
-        assert "None" in warnings_section
+        assert "undefined p-values" in warnings_section
+        assert "None" not in warnings_section
 
     def test_end_to_end_gene_order_preserved(self) -> None:
-        """Gene order in report matches result.gene_results order."""
+        """Gene order in report table matches result.gene_results order."""
         from pharmomics.analysis.example_data import make_demo_inputs
         from pharmomics.analysis.run import run_analysis
 
@@ -429,5 +432,8 @@ class TestEndToEndPipeline:
         report = render_markdown_report(result)
 
         expected_order = ["EGFR", "ERBB2", "TP53", "MYC", "KRAS", "PTEN"]
-        positions = [report.index(gid) for gid in expected_order]
+        # Only search within the gene results table section to avoid
+        # picking up gene IDs in the warning text.
+        table_section = report.split("## Gene Results")[1]
+        positions = [table_section.index(gid) for gid in expected_order]
         assert positions == sorted(positions)

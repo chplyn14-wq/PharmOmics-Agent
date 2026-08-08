@@ -260,6 +260,109 @@ class TestCLIAnalyzeSuccess:
         assert result.exit_code == 0
         assert "Report written to" in result.output
 
+    def test_finite_statistical_values(self, tmp_path: Path) -> None:
+        """Valid fixture produces finite p-values, adj-p-values, log2FC, base_mean."""
+        expr = _write_expr_file(tmp_path)
+        meta = _write_metadata_json(tmp_path)
+        output = tmp_path / "report.md"
+        result = runner.invoke(
+            app,
+            [
+                "analyze",
+                "--expression-file",
+                str(expr),
+                "--metadata-file",
+                str(meta),
+                "--contrast-control",
+                "DMSO",
+                "--contrast-treatment",
+                "osi_DTP",
+                "--output",
+                str(output),
+            ],
+        )
+        assert result.exit_code == 0
+        content = output.read_text(encoding="utf-8")
+        # No NaN in the report for this valid fixture
+        assert "NaN" not in content
+        # All five genes should appear
+        for gene in ("EGFR", "ERBB2", "TP53", "BRCA1", "MYC"):
+            assert gene in content
+
+    def test_significant_classification(self, tmp_path: Path) -> None:
+        """Strongly up/downregulated genes should be significant; null should not."""
+        expr = _write_expr_file(tmp_path)
+        meta = _write_metadata_json(tmp_path)
+        output = tmp_path / "report.md"
+        result = runner.invoke(
+            app,
+            [
+                "analyze",
+                "--expression-file",
+                str(expr),
+                "--metadata-file",
+                str(meta),
+                "--contrast-control",
+                "DMSO",
+                "--contrast-treatment",
+                "osi_DTP",
+                "--output",
+                str(output),
+            ],
+        )
+        assert result.exit_code == 0
+        content = output.read_text(encoding="utf-8")
+        # TP53 has tiny change + noise → should not be significant
+        # Find the TP53 line and verify it says "No"
+        for line in content.splitlines():
+            if "TP53" in line:
+                assert "| No |" in line, f"TP53 should not be significant: {line}"
+                break
+        # EGFR is strongly downregulated → should be significant
+        for line in content.splitlines():
+            if "EGFR" in line:
+                assert "| Yes |" in line, f"EGFR should be significant: {line}"
+                break
+
+    def test_log2fc_direction(self, tmp_path: Path) -> None:
+        """Upregulated genes should have positive log2FC; downregulated negative."""
+        expr = _write_expr_file(tmp_path)
+        meta = _write_metadata_json(tmp_path)
+        output = tmp_path / "report.md"
+        result = runner.invoke(
+            app,
+            [
+                "analyze",
+                "--expression-file",
+                str(expr),
+                "--metadata-file",
+                str(meta),
+                "--contrast-control",
+                "DMSO",
+                "--contrast-treatment",
+                "osi_DTP",
+                "--output",
+                str(output),
+            ],
+        )
+        assert result.exit_code == 0
+        content = output.read_text(encoding="utf-8")
+        for line in content.splitlines():
+            if line.startswith("| ERBB2") or line.startswith("| MYC"):
+                # Upregulated: treatment > control → positive log2FC
+                fields = [f.strip() for f in line.split("|")]
+                log2fc = float(fields[2])
+                assert log2fc > 0, (
+                    f"{fields[1]} should have positive log2FC, got {log2fc}"
+                )
+            elif line.startswith("| EGFR") or line.startswith("| BRCA1"):
+                # Downregulated: treatment < control → negative log2FC
+                fields = [f.strip() for f in line.split("|")]
+                log2fc = float(fields[2])
+                assert log2fc < 0, (
+                    f"{fields[1]} should have negative log2FC, got {log2fc}"
+                )
+
 
 # ---------------------------------------------------------------------------
 # Failure cases
@@ -447,6 +550,41 @@ class TestCLIAnalyzeFailure:
             ],
         )
         assert result.exit_code != 0
+
+    def test_insufficient_replicates(self, tmp_path: Path) -> None:
+        """Should reject when a contrast group has only one replicate."""
+        expr_path = tmp_path / "expr.tsv"
+        expr_path.write_text(
+            "gene\tctrl_1\ttrt_1\nEGFR\t1000\t200\nTP53\t300\t100\n",
+            encoding="utf-8",
+        )
+        meta_path = tmp_path / "metadata.json"
+        meta_path.write_text(
+            '{"samples": {'
+            '"ctrl_1": {"condition": "DMSO"},'
+            '"trt_1": {"condition": "osi_DTP"}'
+            "}}",
+            encoding="utf-8",
+        )
+        result = runner.invoke(
+            app,
+            [
+                "analyze",
+                "--expression-file",
+                str(expr_path),
+                "--metadata-file",
+                str(meta_path),
+                "--contrast-control",
+                "DMSO",
+                "--contrast-treatment",
+                "osi_DTP",
+            ],
+        )
+        assert result.exit_code != 0
+        assert (
+            "Insufficient replicates" in result.output
+            or "insufficient replicates" in result.output.lower()
+        )
 
 
 # ---------------------------------------------------------------------------
