@@ -12,7 +12,11 @@ from pathlib import Path
 import typer
 
 from pharmomics.analysis.example_data import make_demo_inputs
-from pharmomics.analysis.render import render_markdown_report
+from pharmomics.analysis.render import (
+    render_markdown_report,
+    render_results_tsv,
+    render_significant_genes_tsv,
+)
 from pharmomics.analysis.run import run_analysis
 from pharmomics.analysis.runner import AnalysisValidationError
 from pharmomics.cli.analyze import analyze as run_analyze
@@ -202,6 +206,14 @@ def analyze_demo(
     output.write_text(markdown, encoding="utf-8")
     typer.echo(f"Report written to {output.resolve()}")
 
+    # Write TSV exports alongside the report
+    results_tsv = output_parent / "results.tsv"
+    sig_tsv = output_parent / "significant_genes.tsv"
+    results_tsv.write_text(render_results_tsv(result), encoding="utf-8")
+    sig_tsv.write_text(render_significant_genes_tsv(result), encoding="utf-8")
+    typer.echo(f"Results written to {results_tsv.resolve()}")
+    typer.echo(f"Significant genes written to {sig_tsv.resolve()}")
+
 
 @app.command("analyze")
 def analyze_cmd(
@@ -264,7 +276,7 @@ def analyze_cmd(
         raise typer.Exit(1)
 
     try:
-        markdown = run_analyze(
+        result = run_analyze(
             expression_file=expression_file,
             metadata_file=metadata_file,
             contrast_control=contrast_control,
@@ -291,8 +303,18 @@ def analyze_cmd(
         )
         raise typer.Exit(1)
 
+    # Render and write Markdown report
+    markdown = render_markdown_report(result)
     output.write_text(markdown, encoding="utf-8")
     typer.echo(f"Report written to {output.resolve()}")
+
+    # Write TSV exports alongside the report
+    results_tsv = output_parent / "results.tsv"
+    sig_tsv = output_parent / "significant_genes.tsv"
+    results_tsv.write_text(render_results_tsv(result), encoding="utf-8")
+    sig_tsv.write_text(render_significant_genes_tsv(result), encoding="utf-8")
+    typer.echo(f"Results written to {results_tsv.resolve()}")
+    typer.echo(f"Significant genes written to {sig_tsv.resolve()}")
 
 
 if __name__ == "__main__":

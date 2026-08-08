@@ -1,8 +1,8 @@
 """CLI ``analyze`` command — run differential analysis on real data files.
 
 Orchestration only: builds domain objects from raw files via existing
-ingest/parser modules, then delegates to ``run_analysis()`` and
-``render_markdown_report()``.
+ingest/parser modules, then delegates to ``run_analysis()`` and returns
+an ``AnalysisResult`` for downstream rendering.
 
 No statistical or scientific logic is implemented here.
 """
@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from pharmomics.analysis.render import render_markdown_report
+from pharmomics.analysis.results import AnalysisResult
 from pharmomics.analysis.run import run_analysis
 from pharmomics.experiment.enums import FactorType, GroupRole
 from pharmomics.experiment.schemas import (
@@ -202,7 +202,7 @@ def analyze(
     output: Path,
     *,
     source_id: str = "local",
-) -> str:
+) -> AnalysisResult:
     """Run the full analysis pipeline on real data files.
 
     Parameters
@@ -216,14 +216,16 @@ def analyze(
     contrast_treatment : str
         Condition name for the comparison group.
     output : Path
-        Output path for the Markdown report.
+        Output path for the Markdown report (unused for the return
+        value; kept for API compatibility).
     source_id : str, optional
         Provenance source identifier.
 
     Returns
     -------
-    str
-        The rendered Markdown report content.
+    AnalysisResult
+        The completed analysis result.  All values are computed by the
+        analysis engine; this function does no statistical computation.
 
     Raises
     ------
@@ -277,7 +279,4 @@ def analyze(
     # Run analysis (includes full validation chain)
     result = run_analysis(spec, design, omics)
 
-    # Render report
-    markdown = render_markdown_report(result)
-
-    return markdown
+    return result

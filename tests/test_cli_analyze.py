@@ -604,3 +604,270 @@ class TestCLIAnalyzeHelp:
         assert "--contrast-control" in result.output
         assert "--contrast-treatment" in result.output
         assert "--output" in result.output
+
+
+# ---------------------------------------------------------------------------
+# TSV export end-to-end
+# ---------------------------------------------------------------------------
+
+
+class TestCLIAnalyzeTsv:
+    """Verify CLI analyze produces TSV files alongside report."""
+
+    def test_three_files_created(self, tmp_path: Path) -> None:
+        """Successful analyze creates report.md + results.tsv + sig_genes.tsv."""
+        expr = _write_expr_file(tmp_path)
+        meta = _write_metadata_json(tmp_path)
+        output = tmp_path / "report.md"
+        result = runner.invoke(
+            app,
+            [
+                "analyze",
+                "--expression-file",
+                str(expr),
+                "--metadata-file",
+                str(meta),
+                "--contrast-control",
+                "DMSO",
+                "--contrast-treatment",
+                "osi_DTP",
+                "--output",
+                str(output),
+            ],
+        )
+        assert result.exit_code == 0
+        assert output.exists()
+        assert (tmp_path / "results.tsv").exists()
+        assert (tmp_path / "significant_genes.tsv").exists()
+
+    def test_tsv_in_same_directory_as_report(self, tmp_path: Path) -> None:
+        """TSV files must be in the same directory as report.md."""
+        expr = _write_expr_file(tmp_path)
+        meta = _write_metadata_json(tmp_path)
+        output = tmp_path / "sub" / "report.md"
+        output.parent.mkdir()
+        result = runner.invoke(
+            app,
+            [
+                "analyze",
+                "--expression-file",
+                str(expr),
+                "--metadata-file",
+                str(meta),
+                "--contrast-control",
+                "DMSO",
+                "--contrast-treatment",
+                "osi_DTP",
+                "--output",
+                str(output),
+            ],
+        )
+        assert result.exit_code == 0
+        assert output.exists()
+        tsv_dir = output.parent
+        assert (tsv_dir / "results.tsv").exists()
+        assert (tsv_dir / "significant_genes.tsv").exists()
+
+    def test_results_tsv_header(self, tmp_path: Path) -> None:
+        """results.tsv should have the correct header."""
+        expr = _write_expr_file(tmp_path)
+        meta = _write_metadata_json(tmp_path)
+        output = tmp_path / "report.md"
+        result = runner.invoke(
+            app,
+            [
+                "analyze",
+                "--expression-file",
+                str(expr),
+                "--metadata-file",
+                str(meta),
+                "--contrast-control",
+                "DMSO",
+                "--contrast-treatment",
+                "osi_DTP",
+                "--output",
+                str(output),
+            ],
+        )
+        assert result.exit_code == 0
+        tsv = (tmp_path / "results.tsv").read_text(encoding="utf-8")
+        header = tsv.split("\n")[0]
+        expected = (
+            "gene_id\tlog2_fold_change\tp_value\tadj_p_value\tsignificant\tbase_mean"
+        )
+        assert header == expected
+
+    def test_results_tsv_all_genes(self, tmp_path: Path) -> None:
+        """results.tsv should contain all 5 genes from the fixture."""
+        expr = _write_expr_file(tmp_path)
+        meta = _write_metadata_json(tmp_path)
+        output = tmp_path / "report.md"
+        result = runner.invoke(
+            app,
+            [
+                "analyze",
+                "--expression-file",
+                str(expr),
+                "--metadata-file",
+                str(meta),
+                "--contrast-control",
+                "DMSO",
+                "--contrast-treatment",
+                "osi_DTP",
+                "--output",
+                str(output),
+            ],
+        )
+        assert result.exit_code == 0
+        tsv = (tmp_path / "results.tsv").read_text(encoding="utf-8")
+        lines = [ln for ln in tsv.split("\n") if ln]
+        assert len(lines) == 6  # header + 5 genes
+
+    def test_results_tsv_gene_order(self, tmp_path: Path) -> None:
+        """Gene order in results.tsv should match original order (EGFR first)."""
+        expr = _write_expr_file(tmp_path)
+        meta = _write_metadata_json(tmp_path)
+        output = tmp_path / "report.md"
+        result = runner.invoke(
+            app,
+            [
+                "analyze",
+                "--expression-file",
+                str(expr),
+                "--metadata-file",
+                str(meta),
+                "--contrast-control",
+                "DMSO",
+                "--contrast-treatment",
+                "osi_DTP",
+                "--output",
+                str(output),
+            ],
+        )
+        assert result.exit_code == 0
+        tsv = (tmp_path / "results.tsv").read_text(encoding="utf-8")
+        lines = [ln for ln in tsv.split("\n") if ln][1:]  # skip header
+        assert lines[0].startswith("EGFR")
+        assert lines[1].startswith("ERBB2")
+        assert lines[4].startswith("MYC")
+
+    def test_results_tsv_finite_values(self, tmp_path: Path) -> None:
+        """Valid fixture produces finite p-values in results.tsv."""
+        import math
+
+        expr = _write_expr_file(tmp_path)
+        meta = _write_metadata_json(tmp_path)
+        output = tmp_path / "report.md"
+        result = runner.invoke(
+            app,
+            [
+                "analyze",
+                "--expression-file",
+                str(expr),
+                "--metadata-file",
+                str(meta),
+                "--contrast-control",
+                "DMSO",
+                "--contrast-treatment",
+                "osi_DTP",
+                "--output",
+                str(output),
+            ],
+        )
+        assert result.exit_code == 0
+        tsv = (tmp_path / "results.tsv").read_text(encoding="utf-8")
+        for line in tsv.split("\n")[1:]:
+            if not line:
+                continue
+            fields = line.split("\t")
+            p_val = fields[2]
+            adj_p = fields[3]
+            assert math.isfinite(float(p_val)), f"p_value not finite: {p_val}"
+            assert math.isfinite(float(adj_p)), f"adj_p_value not finite: {adj_p}"
+
+    def test_significant_tsv_only_significant_genes(self, tmp_path: Path) -> None:
+        """significant_genes.tsv should only contain genes with significant=True."""
+        expr = _write_expr_file(tmp_path)
+        meta = _write_metadata_json(tmp_path)
+        output = tmp_path / "report.md"
+        result = runner.invoke(
+            app,
+            [
+                "analyze",
+                "--expression-file",
+                str(expr),
+                "--metadata-file",
+                str(meta),
+                "--contrast-control",
+                "DMSO",
+                "--contrast-treatment",
+                "osi_DTP",
+                "--output",
+                str(output),
+            ],
+        )
+        assert result.exit_code == 0
+        tsv = (tmp_path / "significant_genes.tsv").read_text(encoding="utf-8")
+        lines = [ln for ln in tsv.split("\n") if ln][1:]  # skip header
+        for line in lines:
+            fields = line.split("\t")
+            assert fields[4] == "True"
+
+    def test_significant_tsv_finite_values(self, tmp_path: Path) -> None:
+        """significant_genes.tsv should have finite p-values for valid fixture."""
+        import math
+
+        expr = _write_expr_file(tmp_path)
+        meta = _write_metadata_json(tmp_path)
+        output = tmp_path / "report.md"
+        result = runner.invoke(
+            app,
+            [
+                "analyze",
+                "--expression-file",
+                str(expr),
+                "--metadata-file",
+                str(meta),
+                "--contrast-control",
+                "DMSO",
+                "--contrast-treatment",
+                "osi_DTP",
+                "--output",
+                str(output),
+            ],
+        )
+        assert result.exit_code == 0
+        tsv = (tmp_path / "significant_genes.tsv").read_text(encoding="utf-8")
+        for line in tsv.split("\n")[1:]:
+            if not line:
+                continue
+            fields = line.split("\t")
+            p_val = fields[2]
+            adj_p = fields[3]
+            assert math.isfinite(float(p_val)), f"p_value not finite: {p_val}"
+            assert math.isfinite(float(adj_p)), f"adj_p_value not finite: {adj_p}"
+
+    def test_output_mentions_tsv_files(self, tmp_path: Path) -> None:
+        """CLI output should mention TSV files being written."""
+        expr = _write_expr_file(tmp_path)
+        meta = _write_metadata_json(tmp_path)
+        output = tmp_path / "report.md"
+        result = runner.invoke(
+            app,
+            [
+                "analyze",
+                "--expression-file",
+                str(expr),
+                "--metadata-file",
+                str(meta),
+                "--contrast-control",
+                "DMSO",
+                "--contrast-treatment",
+                "osi_DTP",
+                "--output",
+                str(output),
+            ],
+        )
+        assert result.exit_code == 0
+        assert "results.tsv" in result.output
+        assert "Significant genes written to" in result.output
