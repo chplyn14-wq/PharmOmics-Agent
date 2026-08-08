@@ -13,6 +13,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from math import isinf, isnan
 from typing import TYPE_CHECKING
+import warnings
 
 if TYPE_CHECKING:
     from pharmomics.analysis.matrix_slice import DifferentialInput
@@ -55,8 +56,8 @@ def compute_per_gene_p_value(
     -------
     tuple[GenePValue, ...]
         One entry per gene, in original feature-id order.  Genes that
-        cannot be tested (insufficient samples, zero variance, or
-        non-finite values) receive ``p_value = NaN``.
+        cannot be tested (insufficient samples, both groups having zero
+        variance, or non-finite values) receive ``p_value = NaN``.
 
     Raises
     ------
@@ -180,8 +181,8 @@ def _gene_p_value(
     -------
     GenePValue
         The gene's p-value, or ``NaN`` when the test cannot be
-        computed (insufficient samples, zero variance, non-finite
-        values, or scipy returns NaN).
+        computed (insufficient samples, both groups zero variance,
+        non-finite values, or scipy returns NaN).
     """
     from scipy.stats import ttest_ind
 
@@ -197,15 +198,19 @@ def _gene_p_value(
         if not isinstance(v, (int, float)) or isnan(v) or isinf(v):
             return GenePValue(gene_id=gene_id, p_value=float("nan"))
 
-    # Zero variance in either group.
+    # Zero variance in both groups — Welch's t-test denominator is zero.
     comp_var = _variance(comp_vals)
     ref_var = _variance(ref_vals)
-    if comp_var == 0.0 or ref_var == 0.0:
+    if comp_var == 0.0 and ref_var == 0.0:
         return GenePValue(gene_id=gene_id, p_value=float("nan"))
 
     # Run Welch's t-test.
     try:
-        result = ttest_ind(comp_vals, ref_vals, equal_var=False)
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                "ignore", "Precision loss occurred", category=RuntimeWarning
+            )
+            result = ttest_ind(comp_vals, ref_vals, equal_var=False)
         p = float(result.pvalue)
         if isnan(p):
             return GenePValue(gene_id=gene_id, p_value=float("nan"))

@@ -386,10 +386,17 @@ class TestComputePerGenePValueInsufficientSamples:
 
 
 class TestComputePerGenePValueZeroVariance:
-    """Verify NaN is returned when one or both groups have zero variance."""
+    """Verify behavior when one or both groups have zero variance.
+
+    When exactly one group has zero variance, Welch's t-test still
+    produces a finite p-value (the zero-variance group is treated as
+    a fixed value, with df equal to the other group's sample count
+    minus one).  When both groups have zero variance, the test is
+    degenerate and returns NaN.
+    """
 
     def test_comparison_zero_variance(self) -> None:
-        """All comp values identical -> NaN."""
+        """All comp values identical — Welch reduces to df = ref_n - 1."""
         matrix = _make_matrix(
             sample_ids=["S0", "S1", "S2", "S3"],
             feature_ids=["G0"],
@@ -403,10 +410,13 @@ class TestComputePerGenePValueZeroVariance:
         result = compute_per_gene_p_value(diff_input)
 
         assert len(result) == 1
-        assert isnan(result[0].p_value)
+        assert not isnan(result[0].p_value), (
+            "one-group zero variance should yield finite Welch p-value"
+        )
+        assert 0.0 < result[0].p_value <= 1.0
 
     def test_reference_zero_variance(self) -> None:
-        """All ref values identical -> NaN."""
+        """All ref values identical — Welch reduces to df = comp_n - 1."""
         matrix = _make_matrix(
             sample_ids=["S0", "S1", "S2", "S3"],
             feature_ids=["G0"],
@@ -420,7 +430,10 @@ class TestComputePerGenePValueZeroVariance:
         result = compute_per_gene_p_value(diff_input)
 
         assert len(result) == 1
-        assert isnan(result[0].p_value)
+        assert not isnan(result[0].p_value), (
+            "one-group zero variance should yield finite Welch p-value"
+        )
+        assert 0.0 < result[0].p_value <= 1.0
 
     def test_both_zero_variance(self) -> None:
         """Both groups have zero variance -> NaN."""
@@ -440,8 +453,8 @@ class TestComputePerGenePValueZeroVariance:
         assert isnan(result[0].p_value)
 
     def test_mixed_zero_variance_and_normal(self) -> None:
-        """One gene has zero variance, another is normal."""
-        # G0: comp=[10,10] zero var, ref=[20,22]
+        """One gene has one-group zero variance, another is normal."""
+        # G0: comp=[10,10] zero var, ref=[20,22] — Welch handles this
         # G1: comp=[10,12], ref=[20,22] normal
         matrix = _make_matrix(
             sample_ids=["S0", "S1", "S2", "S3"],
@@ -459,8 +472,35 @@ class TestComputePerGenePValueZeroVariance:
         result = compute_per_gene_p_value(diff_input)
 
         assert len(result) == 2
-        assert isnan(result[0].p_value), "G0 should be NaN (zero var)"
+        assert not isnan(result[0].p_value), (
+            "G0 should have finite Welch p-value (one-group zero var)"
+        )
         assert not isnan(result[1].p_value), "G1 should have valid p-value"
+
+    def test_one_group_zero_variance_finite_pvalue(self) -> None:
+        """Regression: one-group zero variance yields a known Welch p-value.
+
+        comp=[10,10,10] (var=0), ref=[20,22,24] (var=4).
+        scipy Welch t-test gives p≈0.00913 with df=2.
+        """
+        matrix = _make_matrix(
+            sample_ids=["S0", "S1", "S2", "S3", "S4", "S5"],
+            feature_ids=["G0"],
+            data=[[10.0, 10.0, 10.0, 20.0, 22.0, 24.0]],
+        )
+        contrast = _make_contrast(
+            comparison_ids=["S0", "S1", "S2"],
+            reference_ids=["S3", "S4", "S5"],
+        )
+        diff_input = prepare_differential_inputs(matrix, contrast)
+        result = compute_per_gene_p_value(diff_input)
+
+        assert len(result) == 1
+        assert not isnan(result[0].p_value)
+        # Verify against scipy's Welch p-value to 6 decimal places
+        assert abs(result[0].p_value - 0.009133) < 1e-5, (
+            f"Expected p≈0.009133, got {result[0].p_value}"
+        )
 
 
 # ---------------------------------------------------------------------------
