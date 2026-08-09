@@ -27,6 +27,12 @@ runs/
 *.parquet
 !data/demo/
 
+# Real experimental data (never commit)
+data/real_analysis/
+
+# Analysis reports generated at repo root
+report.md
+
 # OS
 .DS_Store
 Thumbs.db
