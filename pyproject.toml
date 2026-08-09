@@ -8,6 +8,19 @@ requires-python = ">=3.11"
 authors = [
     {name = "chplyn14-wq"},
 ]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Topic :: Scientific/Engineering :: Bio-Informatics",
+]
+keywords = [
+    "transcriptomics",
+    "drug-discovery",
+    "gene-expression",
+    "scientific-research",
+]
+
 dependencies = [
     "pydantic>=2",
     "pydantic-settings>=2",
@@ -15,6 +28,11 @@ dependencies = [
     "pandas>=2",
     "scipy>=1.11",
 ]
+
+[project.urls]
+Homepage = "https://github.com/chplyn14-wq/PharmOmics-Agent"
+Repository = "https://github.com/chplyn14-wq/PharmOmics-Agent"
+Issues = "https://github.com/chplyn14-wq/PharmOmics-Agent/issues"
 
 [project.optional-dependencies]
 dev = [

@@ -232,7 +232,9 @@ Example JSON:
 
 ---
 
-## Quick Start
+## Installation
+
+### Using uv (recommended)
 
 Clone the repository:
 
@@ -241,11 +243,38 @@ git clone https://github.com/<your-org>/pharmomics-agent.git
 cd pharmomics-agent
 ```
 
-Create a virtual environment:
+Create a virtual environment and install dependencies:
 
 ```bash
 uv sync
 ```
+
+### Using pip
+
+Clone the repository and install from the local source:
+
+```bash
+git clone https://github.com/<your-org>/pharmomics-agent.git
+cd pharmomics-agent
+python -m venv .venv
+source .venv/bin/activate   # On Windows: .venv\Scripts\activate
+pip install -e .
+```
+
+Or install directly from GitHub:
+
+```bash
+pip install git+https://github.com/chplyn14-wq/PharmOmics-Agent.git
+```
+
+> **Note**
+>
+> This package has not been published to PyPI yet.
+> Installation requires cloning the repository or using the git+ URL above.
+
+---
+
+## Quick Start
 
 Run the CLI:
 

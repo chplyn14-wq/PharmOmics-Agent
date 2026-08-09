@@ -66,7 +66,7 @@ hypotheses, and proposes high-level validation experiments.
 
 \- Run tests: pytest
 
-\- Run app: streamlit run app.py
+\- Run CLI: uv run pharmomics --help
 
 \- Run formatting: ruff format .
 
