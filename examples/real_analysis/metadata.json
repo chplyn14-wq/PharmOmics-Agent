@@ -1,0 +1,10 @@
+{
+  "samples": {
+    "Sample_C1": {"condition": "control"},
+    "Sample_C2": {"condition": "control"},
+    "Sample_C3": {"condition": "control"},
+    "Sample_T1": {"condition": "treatment"},
+    "Sample_T2": {"condition": "treatment"},
+    "Sample_T3": {"condition": "treatment"}
+  }
+}
