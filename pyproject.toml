@@ -3,6 +3,7 @@ name = "pharmomics"
 version = "0.1.0"
 description = "Human-in-the-loop research assistant for drug-response transcriptomics"
 license = "MIT"
+readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
     "pydantic>=2",
